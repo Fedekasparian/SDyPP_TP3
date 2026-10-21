@@ -37,11 +37,12 @@ Cada módulo tiene `provider.tf`, `variables.tf`, `main.tf` y `outputs.tf`. El s
    | `GKE_NODES_SA` | output `gke_nodes_service_account` |
    | `WORKERS_SA` | output `workers_service_account` |
    | `TF_STATE_BUCKET` | output `tfstate_bucket` |
-   | `RABBIT_INTERNAL_IP` / `REDIS_INTERNAL_IP` | después del primer deploy: `kubectl -n tp3 get svc rabbitmq-internal redis-internal` |
+   | `WORKER_COUNT` | cantidad deseada de VMs al mergear cambios de workers (opcional; predeterminado `0`) |
 
-5. Ejecutar el workflow `infra` (dispatch), después `ci` (push a main) y `deploy`, que corre solo después de `ci`. Para los workers, `workers` con dispatch y `worker_count=N`.
+5. Ejecutar el workflow `infra` (dispatch), después `ci` (push a main) y `deploy`, que corre solo después de `ci`. `workers` corre en PR para validar el plan, al mergear cambios de Terraform a `main` y manualmente con `worker_count=N`. El workflow obtiene las IPs internas de RabbitMQ y Redis desde GKE; no hay que copiarlas a GitHub Variables.
 6. Health-checks públicos: `http://<ingress-ip>/health` y `http://<ingress-ip>/api/health`.
 
 ## Costos
 - Los nodos y las VMs son **spot** por defecto.
 - Al terminar cada sesión: `workers` con `worker_count=0`, y si no se usa el cluster por un rato, `terraform destroy` en `gke/`.
+- En pushes a `main`, `workers` usa la variable `WORKER_COUNT`; si no está definida, el valor seguro predeterminado es `0` (sin VMs).
