@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata: { name: rabbitmq-plugins }
 data:
   enabled_plugins: "[rabbitmq_management,rabbitmq_prometheus]."
+  # Hit #4 (D): metricas por cola (ver TP3/observability/rabbitmq/prometheus.conf).
+  rabbitmq.conf: |
+    prometheus.return_per_object_metrics = true
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -32,6 +35,7 @@ spec:
           volumeMounts:
             - { name: data, mountPath: /var/lib/rabbitmq }
             - { name: plugins, mountPath: /etc/rabbitmq/enabled_plugins, subPath: enabled_plugins }
+            - { name: plugins, mountPath: /etc/rabbitmq/conf.d/20-prometheus.conf, subPath: rabbitmq.conf }
           readinessProbe:
             exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
             periodSeconds: 15
