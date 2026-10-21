@@ -18,6 +18,7 @@ Claves:
     worker:alive:{worker_id}      str   heartbeat con TTL
     ratelimit:{user}:{minuto}     int   contador de requests
 """
+import json
 import time
 
 import redis
@@ -83,6 +84,29 @@ def active_job_ids(r, index: str) -> list[str]:
     if stale:
         retry_operation(lambda: r.srem(index, *stale))
     return [jid.decode() for jid, exists in zip(ids, alive) if exists]
+
+
+def event_key(job_id: str) -> str:
+    return f"job:{job_id}:events"
+
+
+def record_result(r, result: dict) -> bool:
+    """Fanout -> stream acotado, deduplicado y con el mismo TTL que el job."""
+    job_id = result["job_id"]
+    script = """
+    local ttl = redis.call('PTTL', KEYS[1])
+    if ttl <= 0 then return 0 end
+    if redis.call('SADD', KEYS[3], ARGV[1]) == 0 then return 0 end
+    redis.call('XADD', KEYS[2], 'MAXLEN', '=', 256, '*', 'data', ARGV[2])
+    redis.call('PEXPIRE', KEYS[2], ttl)
+    redis.call('PEXPIRE', KEYS[3], ttl)
+    return 1
+    """
+    identity = f"{result['fragment_id']}:{result.get('attempt', 0)}"
+    return bool(retry_operation(lambda: r.eval(
+        script, 3, job_key(job_id), event_key(job_id), f"job:{job_id}:events:seen",
+        identity, json.dumps(result),
+    )))
 
 
 def job_key(job_id: str) -> str:

@@ -3,49 +3,178 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TP3 Sobel</title>
+  <title>TP3 · Procesamiento de imágenes</title>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #172139; background: #f5f7fb; }
+    section { background: white; padding: 1.2rem; margin: 1rem 0; border: 1px solid #d9e0ec; border-radius: 10px; }
+    h1 { font-size: 1.6rem; } h2 { font-size: 1.2rem; }
     label { display: block; margin-top: .8rem; font-weight: 600; }
-    input, select { width: 100%; padding: .4rem; box-sizing: border-box; }
-    button { margin-top: 1rem; padding: .5rem 1.2rem; }
-    pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
+    input { width: 100%; padding: .6rem; box-sizing: border-box; border: 1px solid #aebbd0; border-radius: 4px; }
+    button { margin-top: 1rem; padding: .65rem 1.2rem; cursor: pointer; background: #2448b1; color: white; border: 0; border-radius: 4px; }
+    button:disabled { opacity: .5; cursor: wait; }
+    pre { background: #eef2f8; padding: 1rem; overflow: auto; font-size: .85rem; }
     img { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
+    progress { width: 100%; height: 1.4rem; }
+    .error { color: #a31326; } .muted { color: #4e5e77; }
+    dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
+    dl div { background: #eef2f8; padding: .8rem; } dt { font-size: .8rem; } dd { margin: .4rem 0 0; font-weight: 700; }
+    @media (max-width: 600px) { dl { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
 <body>
   <h1>TP3: procesamiento distribuido de imágenes</h1>
-  <form id="f">
-    <label>Token (Bearer)</label><input id="token" required>
-    <label>Imágenes</label><input id="files" type="file" accept="image/*" multiple required>
-    <label>Operaciones (encadenadas, separadas por coma)</label><input id="ops" value="sobel">
-    <label>Imagen de worker</label><input id="worker" value="tp3-worker">
-    <button>Enviar</button>
-  </form>
-  <pre id="out"></pre>
-  <div id="imgs"></div>
+  <p class="muted">Subí imágenes, elegí operaciones y seguí su procesamiento.</p>
+  <section>
+    <form id="f">
+      <label for="token">Token de acceso</label><input id="token" type="password" autocomplete="off" required>
+      <label for="files">Imágenes</label><input id="files" type="file" accept="image/png,image/jpeg,image/bmp" multiple required>
+      <label for="ops">Operaciones, separadas por coma</label><input id="ops" value="sobel" required>
+      <label for="worker">Pool de workers</label><input id="worker" value="tp3-worker" required>
+      <button id="submit">Enviar imágenes</button>
+    </form>
+    <p id="message" role="status" aria-live="polite"></p>
+  </section>
+  <section id="job" hidden>
+    <h2>Progreso del trabajo</h2>
+    <p id="status" role="status" aria-live="polite"></p>
+    <progress id="progress" max="100" value="0" aria-label="Fragmentos completados"></progress>
+    <pre id="out"></pre>
+    <div id="imgs"></div>
+  </section>
+  <section>
+    <h2>Administración</h2>
+    <p class="muted">Usá un token admin para consultar colas, workers y rendimiento. Actualización cada 5 segundos.</p>
+    <button id="admin-toggle" type="button">Ver estadísticas</button>
+    <p id="admin-message" role="status" aria-live="polite"></p>
+    <div id="admin-panel" hidden>
+      <dl>
+        <div><dt>Workers activos</dt><dd id="workers-count">—</dd></div>
+        <div><dt>Latencia p95</dt><dd id="p95">—</dd></div>
+        <div><dt>Tasa de error</dt><dd id="error-rate">—</dd></div>
+        <div><dt>Jobs terminados</dt><dd id="done-count">—</dd></div>
+      </dl>
+      <pre id="stats"></pre>
+    </div>
+  </section>
 <script>
-const out = document.getElementById("out"), imgs = document.getElementById("imgs");
-const hdr = () => ({ Authorization: "Bearer " + document.getElementById("token").value });
-document.getElementById("f").onsubmit = async (e) => {
-  e.preventDefault(); imgs.innerHTML = "";
-  const fd = new FormData();
-  for (const f of document.getElementById("files").files) fd.append("files", f);
-  fd.append("ops", document.getElementById("ops").value);
-  fd.append("worker_image", document.getElementById("worker").value);
-  const res = await fetch("/api/jobs", { method: "POST", body: fd, headers: hdr() });
-  const body = await res.json(); out.textContent = JSON.stringify(body, null, 2);
-  if (res.ok) poll(body.job_id);
-};
-async function poll(id) {
-  const res = await fetch("/api/jobs/" + id, { headers: hdr() });
-  const job = await res.json(); out.textContent = JSON.stringify(job, null, 2);
-  if (["queued", "processing"].includes(job.status)) return setTimeout(() => poll(id), 1000);
-  for (const url of job.results || []) {
-    const blob = await (await fetch("/api" + url, { headers: hdr() })).blob();
-    const img = document.createElement("img"); img.src = URL.createObjectURL(blob); imgs.appendChild(img);
+const el = id => document.getElementById(id);
+let active = null, adminTimer = null, adminActive = false, adminController = null;
+let imageUrls = [];
+const headers = token => ({ Authorization: "Bearer " + token });
+const token = () => el("token").value.trim();
+const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+function message(id, text, error = false) { el(id).textContent = text; el(id).className = error ? "error" : ""; }
+async function checked(response) {
+  if (!response.ok) {
+    let body;
+    try { body = await response.json(); } catch { body = {}; }
+    throw new Error(body.detail || `HTTP ${response.status}`);
+  }
+  return response;
+}
+function clearImages() { imageUrls.forEach(URL.revokeObjectURL); imageUrls = []; el("imgs").replaceChildren(); }
+function render(job) {
+  el("job").hidden = false;
+  el("progress").value = job.progress_pct;
+  message("status", `${job.status} · ${job.fragments.done}/${job.fragments.total} fragmentos · ${job.progress_pct}%`, ["failed", "dlq"].includes(job.status));
+  el("out").textContent = JSON.stringify(job, null, 2);
+}
+async function results(job, auth, signal) {
+  for (const [i, url] of (job.results || []).entries()) {
+    const response = await checked(await fetch("/api" + url, { headers: headers(auth), signal }));
+    const blob = await response.blob();
+    if (signal.aborted) return;
+    const objectUrl = URL.createObjectURL(blob); imageUrls.push(objectUrl);
+    const image = document.createElement("img"); image.src = objectUrl; image.alt = `Resultado ${i + 1}`;
+    el("imgs").appendChild(image);
   }
 }
+async function follow(id, auth, signal) {
+  while (!signal.aborted) {
+    const response = await checked(await fetch(`/api/jobs/${id}/events`, { headers: headers(auth), signal }));
+    const reader = response.body.getReader(), decoder = new TextDecoder();
+    let buffer = "", terminal = null;
+    try {
+      while (!signal.aborted) {
+        const {value, done} = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, {stream: true});
+        let boundary;
+        while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+          const frame = buffer.slice(0, boundary); buffer = buffer.slice(boundary + 2);
+          const lines = frame.split("\n");
+          const event = lines.find(line => line.startsWith("event: "))?.slice(7);
+          const data = lines.filter(line => line.startsWith("data: ")).map(line => line.slice(6)).join("\n");
+          if (!data) continue;
+          const body = JSON.parse(data);
+          if (event === "error") throw new Error(body.detail);
+          if (event === "progress") {
+            render(body);
+            if (["done", "failed", "dlq"].includes(body.status)) terminal = body;
+          }
+        }
+        if (terminal) break;
+      }
+    } finally { await reader.cancel(); }
+    if (terminal) {
+      await results(terminal, auth, signal);
+      message("message", terminal.status === "done" ? "Trabajo terminado." : (terminal.error || "Trabajo detenido."), terminal.status !== "done");
+      return;
+    }
+    await pause(1000); // El servidor renueva el stream; la siguiente conexión revalida permisos.
+  }
+}
+el("f").onsubmit = async event => {
+  event.preventDefault();
+  active?.abort(); active = new AbortController();
+  const signal = active.signal, auth = token();
+  clearImages(); el("job").hidden = true; el("submit").disabled = true;
+  message("message", "Enviando imágenes…");
+  const form = new FormData();
+  for (const file of el("files").files) form.append("files", file);
+  form.append("ops", el("ops").value); form.append("worker_image", el("worker").value);
+  try {
+    const response = await checked(await fetch("/api/jobs", {method: "POST", body: form, headers: headers(auth), signal}));
+    const job = await response.json();
+    message("message", `Trabajo ${job.job_id} aceptado. Progreso en vivo conectado.`);
+    await follow(job.job_id, auth, signal);
+  } catch (error) { if (error.name !== "AbortError") message("message", error.message, true); }
+  finally { if (!signal.aborted) el("submit").disabled = false; }
+};
+function stopAdmin() {
+  adminActive = false; clearTimeout(adminTimer); adminController?.abort();
+  el("admin-toggle").textContent = "Ver estadísticas";
+}
+async function refreshAdmin() {
+  adminController = new AbortController();
+  try {
+    const response = await checked(await fetch("/api/stats", {headers: headers(token()), signal: adminController.signal}));
+    const stats = await response.json();
+    if (!adminActive) return;
+    el("admin-panel").hidden = false;
+    el("workers-count").textContent = stats.active_workers.length;
+    el("p95").textContent = stats.latency_s.p95 == null ? "Sin muestras" : `${stats.latency_s.p95} s`;
+    el("error-rate").textContent = `${(stats.error_rate * 100).toFixed(1)}%`;
+    el("done-count").textContent = stats.jobs_by_status.done;
+    el("stats").textContent = JSON.stringify(stats, null, 2);
+    message("admin-message", `Actualizado: ${new Date().toLocaleTimeString()}`);
+    adminTimer = setTimeout(refreshAdmin, 5000);
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    stopAdmin(); el("admin-panel").hidden = true;
+    message("admin-message", error.message, true);
+  }
+}
+el("admin-toggle").onclick = () => {
+  if (adminActive) { stopAdmin(); message("admin-message", "Actualización pausada."); return; }
+  adminActive = true; el("admin-toggle").textContent = "Pausar estadísticas"; refreshAdmin();
+};
+el("token").oninput = () => {
+  active?.abort(); stopAdmin(); clearImages();
+  el("job").hidden = true; el("admin-panel").hidden = true; el("submit").disabled = false;
+  message("message", ""); message("admin-message", "");
+};
+window.addEventListener("beforeunload", () => { active?.abort(); stopAdmin(); clearImages(); });
 </script>
 </body>
 </html>

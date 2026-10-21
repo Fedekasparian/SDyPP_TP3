@@ -12,7 +12,7 @@ import redis
 from fastapi import Depends, FastAPI, File, Form, Header, Query, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from starlette.concurrency import run_in_threadpool
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from prometheus_client import make_asgi_app
 
 from tp3common import auth, config, rabbit, store
@@ -28,6 +28,7 @@ app = FastAPI(title="TP3 Sobel API", version="1.0.0")
 app.mount("/metrics", make_asgi_app())
 r = store.connect()
 REPLICA_ID = socket.gethostname()
+SSE_DURATION_S = 55
 
 
 class ApiError(Exception):
@@ -265,6 +266,53 @@ def list_jobs(user: dict = Depends(current_user)):
 @app.get("/jobs/{job_id}")
 def get_job(job_id: str, user: dict = Depends(current_user)):
     return _job_view(job_id, _load_job(job_id, user))
+
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def _job_events(request: Request, job_id: str, user: dict, initial: dict):
+    snapshot, previous = initial, None
+    cursor = "0-0"
+    deadline = time.monotonic() + SSE_DURATION_S
+    try:
+        while not await request.is_disconnected():
+            if user["exp"] <= time.time():
+                yield _sse("error", {"error": "unauthorized", "detail": "Token expirado"})
+                return
+            if snapshot != previous:
+                yield _sse("progress", snapshot)
+                previous = snapshot
+            if snapshot["status"] in ("done", "failed", "dlq"):
+                return
+            if time.monotonic() >= deadline:
+                yield _sse("reconnect", {"detail": "Reconectar para continuar"})
+                return
+            # XREAD bloquea como maximo un segundo, fuera del event loop.
+            entries = await run_in_threadpool(
+                lambda: r.xread({store.event_key(job_id): cursor}, count=50, block=1000)
+            )
+            for _, messages in entries:
+                for event_id, fields in messages:
+                    cursor = event_id.decode()
+                    yield _sse("result", json.loads(fields[b"data"]))
+            # Joiner y monitor consumen copias independientes: volver a leer el
+            # estado evita perder el 'done' si el monitor recibio el fanout antes.
+            snapshot = await run_in_threadpool(get_job, job_id, user)
+            yield ": keep-alive\n\n"
+    except redis.RedisError:
+        yield _sse("error", {"error": "store_unavailable", "detail": "Redis no disponible"})
+    except ApiError as exc:
+        yield _sse("error", {"error": exc.code, "detail": exc.detail})
+
+
+@app.get("/jobs/{job_id}/events", response_class=StreamingResponse)
+async def job_events(request: Request, job_id: str, user: dict = Depends(current_user)):
+    # Autorizar antes de enviar headers SSE: un tercero obtiene 404, no un stream.
+    initial = await run_in_threadpool(get_job, job_id, user)
+    return StreamingResponse(_job_events(request, job_id, user, initial), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.get("/jobs/{job_id}/result/{file_idx}")

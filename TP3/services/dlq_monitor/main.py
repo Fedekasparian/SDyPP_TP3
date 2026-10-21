@@ -37,7 +37,8 @@ def on_dlq(r, ch, method, body: bytes) -> None:
 
 
 def on_result(r, ch, method, body: bytes) -> None:
-    TASKS_PROCESSED.labels(SERVICE).inc()
+    if store.record_result(r, json.loads(body)):
+        TASKS_PROCESSED.labels(SERVICE).inc()
     ch.basic_ack(method.delivery_tag)
 
 
