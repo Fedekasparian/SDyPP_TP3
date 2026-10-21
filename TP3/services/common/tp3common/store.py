@@ -127,15 +127,19 @@ def output_key(job_id: str, file_idx: int) -> str:
 
 def set_status(r: redis.Redis, job_id: str, status: str, **fields) -> None:
     assert status in STATUSES, status
-    def update():
-        pipe = r.pipeline()
-        for s in STATUSES:
-            pipe.srem(f"jobs:status:{s}", job_id)
-        pipe.sadd(f"jobs:status:{status}", job_id)
-        pipe.expire(f"jobs:status:{status}", JOB_TTL_S)
-        pipe.hset(job_key(job_id), mapping={"status": status, **{k: str(v) for k, v in fields.items()}})
-        pipe.execute()
-    retry_operation(update)
+    script = """
+    if redis.call('EXISTS', KEYS[1]) == 0 then return 0 end
+    for i = 3, #KEYS do redis.call('SREM', KEYS[i], ARGV[1]) end
+    redis.call('SADD', KEYS[2], ARGV[1])
+    redis.call('EXPIRE', KEYS[2], ARGV[2])
+    redis.call('HSET', KEYS[1], unpack(ARGV, 3))
+    return 1
+    """
+    keys = [job_key(job_id), f"jobs:status:{status}"] + [f"jobs:status:{s}" for s in STATUSES]
+    values = ["status", status]
+    for key, value in fields.items():
+        values.extend((key, str(value)))
+    retry_operation(lambda: r.eval(script, len(keys), *keys, job_id, JOB_TTL_S, *values))
 
 
 def mark_time(r: redis.Redis, job_id: str, field: str, only_first: bool = False) -> None:

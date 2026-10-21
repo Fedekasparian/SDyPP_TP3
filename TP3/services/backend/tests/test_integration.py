@@ -189,6 +189,8 @@ def test_monitor_deduplicates_and_does_not_recreate_expired_jobs(stack):
     stack.r.delete(store.job_key(job_id), store.event_key(job_id), f"job:{job_id}:events:seen")
     assert not store.record_result(stack.r, result)
     assert not stack.r.exists(store.event_key(job_id))
+    store.set_status(stack.r, job_id, "dlq", error="late message")
+    assert not stack.r.exists(store.job_key(job_id))
 
 
 def test_admin_reprocess_confirms_and_requeues_parked_task(stack):

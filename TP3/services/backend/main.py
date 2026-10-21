@@ -293,6 +293,9 @@ async def _job_events(request: Request, job_id: str, user: dict, initial: dict):
             entries = await run_in_threadpool(
                 lambda: r.xread({store.event_key(job_id): cursor}, count=50, block=1000)
             )
+            if user["exp"] <= time.time():
+                yield _sse("error", {"error": "unauthorized", "detail": "Token expirado"})
+                return
             for _, messages in entries:
                 for event_id, fields in messages:
                     cursor = event_id.decode()
