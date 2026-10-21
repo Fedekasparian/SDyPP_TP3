@@ -11,6 +11,7 @@ import time
 
 from tp3common import config, rabbit, store
 from tp3common.logging_setup import setup_logging
+from tp3common.retry import backoff_delays
 from tp3common.metrics import TASK_ERRORS, TASKS_PROCESSED, TASKS_QUEUED, start_health_server
 
 SERVICE = "dlq-monitor"
@@ -41,20 +42,31 @@ def on_result(r, ch, method, body: bytes) -> None:
 
 
 def queue_depth_loop() -> None:
-    conn = rabbit.connect()
-    ch = conn.channel()
     queues = [rabbit.Q_SPLIT, rabbit.Q_DLQ, rabbit.Q_PARKED] + [
         rabbit.task_queue(p) for p in config.ALLOWED_WORKER_IMAGES
     ]
+    delays = backoff_delays()
     while True:
-        for q in queues:
-            try:
-                TASKS_QUEUED.labels(q).set(rabbit.queue_depth(ch, q))
-            except Exception as exc:  # noqa: BLE001
-                log.warning("no pude leer %s: %s", q, exc)
-                conn = rabbit.connect()
-                ch = conn.channel()
-        time.sleep(5)
+        conn = None
+        try:
+            conn = rabbit.connect(max_attempts=1)
+            ch = conn.channel()
+            rabbit.declare_topology(ch)
+            while True:
+                for q in queues:
+                    TASKS_QUEUED.labels(q).set(rabbit.queue_depth(ch, q))
+                delays = backoff_delays()
+                time.sleep(5)
+        except Exception as exc:  # noqa: BLE001
+            wait = next(delays)
+            log.warning("profundidad no disponible (%s); reintento en %.0fs", type(exc).__name__, wait)
+            time.sleep(wait)
+        finally:
+            if conn is not None and conn.is_open:
+                try:
+                    conn.close()
+                except Exception:  # noqa: BLE001
+                    pass
 
 
 def main() -> None:

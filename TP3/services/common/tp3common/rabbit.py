@@ -41,6 +41,8 @@ def task_queue(pool: str) -> str:
 
 def connect(url: str | None = None, max_attempts: int = 10) -> pika.BlockingConnection:
     params = pika.URLParameters(url or config.RABBIT_URL)
+    params.socket_timeout = 3
+    params.stack_timeout = 5
     params.heartbeat = 60
     params.blocked_connection_timeout = 30
     return retry_with_backoff(lambda: pika.BlockingConnection(params), "rabbitmq", max_attempts)
