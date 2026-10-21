@@ -1,0 +1,26 @@
+# Kubernetes local (k3s / minikube / microk8s) para la Parte 1.
+#   docker compose build            # construye tp3/*:dev
+#   (k3s)      for s in backend split joiner worker dlq-monitor frontend; do docker save tp3/$s:dev | sudo k3s ctr images import -; done
+#   (minikube) minikube image load tp3/backend:dev ...
+#   kubectl -n tp3 create secret generic tp3-secrets --from-literal=... (ver base/secret.example.yaml)
+#   kubectl apply -k TP3/k8s/overlays/local
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tp3
+resources:
+  - ../../base
+  - infra-local.yaml
+  - worker.yaml
+images:
+  - { name: tp3/backend, newTag: dev }
+  - { name: tp3/split, newTag: dev }
+  - { name: tp3/joiner, newTag: dev }
+  - { name: tp3/worker, newTag: dev }
+  - { name: tp3/dlq-monitor, newTag: dev }
+  - { name: tp3/frontend, newTag: dev }
+patches:
+  - target: { kind: Deployment }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/imagePullPolicy
+        value: IfNotPresent

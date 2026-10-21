@@ -1,0 +1,64 @@
+# CI: gitleaks (falla si hay secretos) + tests; en main, build y push de las imagenes
+# al Artifact Registry privado autenticando por OIDC (sin claves JSON).
+name: ci
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: read   # gitleaks-action lista los commits del PR para escanearlos
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: TP3/services }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install ./common pytest==8.3.3 -r backend/requirements.txt
+      - run: python -m pytest -q common/tests backend/tests
+
+  build:
+    needs: [gitleaks, test]
+    # Se activa cuando las GitHub Variables de GCP esten cargadas (ver TP3/infra/README.md)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - { name: backend, dockerfile: backend/Dockerfile, service: "" }
+          - { name: frontend, dockerfile: frontend/Dockerfile, service: "" }
+          - { name: split, dockerfile: Dockerfile.consumer, service: split }
+          - { name: joiner, dockerfile: Dockerfile.consumer, service: joiner }
+          - { name: worker, dockerfile: Dockerfile.consumer, service: worker }
+          - { name: dlq-monitor, dockerfile: Dockerfile.consumer, service: dlq_monitor }
+    env:
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+      - name: Build & push
+        working-directory: TP3/services
+        run: |
+          docker build -f ${{ matrix.dockerfile }} --build-arg SERVICE=${{ matrix.service }} \
+            -t $IMAGE:${{ github.sha }} -t $IMAGE:latest .
+          docker push --all-tags $IMAGE

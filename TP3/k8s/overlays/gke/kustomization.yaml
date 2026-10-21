@@ -1,0 +1,26 @@
+# GKE (Hit #3). Imagenes del Artifact Registry PRIVADO (R1); los nodos las bajan con
+# la identidad de su service account (roles/artifactregistry.reader), sin claves.
+# El pipeline reemplaza REGION/PROJECT y el tag con `kustomize edit set image`.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tp3
+resources:
+  - ../../base
+images:
+  - { name: tp3/backend, newName: REGION-docker.pkg.dev/PROJECT/tp3/backend, newTag: latest }
+  - { name: tp3/split, newName: REGION-docker.pkg.dev/PROJECT/tp3/split, newTag: latest }
+  - { name: tp3/joiner, newName: REGION-docker.pkg.dev/PROJECT/tp3/joiner, newTag: latest }
+  - { name: tp3/dlq-monitor, newName: REGION-docker.pkg.dev/PROJECT/tp3/dlq-monitor, newTag: latest }
+  - { name: tp3/frontend, newName: REGION-docker.pkg.dev/PROJECT/tp3/frontend, newTag: latest }
+patches:
+  # Todas las apps al nodepool `apps` (el nodepool `infra` lleva RabbitMQ/Redis/observabilidad)
+  - target: { kind: Deployment }
+    patch: |-
+      - op: add
+        path: /spec/template/spec/nodeSelector
+        value: { pool: apps }
+  - target: { kind: Ingress, name: tp3 }
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value: { kubernetes.io/ingress.class: gce }

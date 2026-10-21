@@ -1,0 +1,18 @@
+# Configuracion NO secreta. Los secretos (RABBIT_URL, REDIS_URL, AUTH_SECRET) van en
+# el Secret `tp3-secrets`, que crea el pipeline (ver secret.example.yaml); nunca en el repo.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tp3-config
+data:
+  ALLOWED_OPS: sobel,grayscale,blur,threshold
+  ALLOWED_WORKER_IMAGES: tp3-worker
+  ALLOWED_FORMATS: PNG,JPEG,BMP
+  MAX_FILE_MB: "100"
+  MAX_FILES: "50"
+  MAX_OPS: "5"
+  RATE_LIMIT_PER_MIN: "600"
+  FRAGMENTS_PER_IMAGE: "4"
+  MAX_RETRIES: "3"
+  WORKER_POOL: tp3-worker
+  FAIL_RATE: "0"

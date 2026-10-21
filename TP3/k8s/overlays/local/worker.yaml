@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels: { app: worker }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: worker } }
+  template:
+    metadata: { labels: { app: worker } }
+    spec:
+      containers:
+        - name: worker
+          image: tp3/worker
+          ports: [{ name: http, containerPort: 8080 }]
+          envFrom: [{ configMapRef: { name: tp3-config } }, { secretRef: { name: tp3-secrets } }]
+          readinessProbe: { httpGet: { path: /health, port: http }, periodSeconds: 10 }
+          resources: { requests: { cpu: 200m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: worker, labels: { app: worker, metrics: "true" } }
+spec: { selector: { app: worker }, ports: [{ name: http, port: 8080, targetPort: http }] }

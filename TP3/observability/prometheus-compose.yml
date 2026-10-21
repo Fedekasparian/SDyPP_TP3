@@ -1,0 +1,14 @@
+# Prometheus para docker-compose (en K8s se usan ServiceMonitors, ver servicemonitors.yaml)
+global:
+  scrape_interval: 5s
+rule_files: []
+scrape_configs:
+  - job_name: backend
+    static_configs: [{ targets: ["backend:8000"] }]
+  - job_name: consumers
+    dns_sd_configs:
+      - names: [worker, split, joiner, dlq-monitor]
+        type: A
+        port: 8080
+  - job_name: rabbitmq
+    static_configs: [{ targets: ["rabbitmq:15692"] }]

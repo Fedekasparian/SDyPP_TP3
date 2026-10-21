@@ -1,0 +1,41 @@
+# Pipeline 1 (infraestructura): cluster GKE con Terraform.
+# terraform plan en cada PR, terraform apply solo al mergear a main.
+name: infra
+on:
+  pull_request:
+    paths: ["TP3/infra/terraform/gke/**"]
+  push:
+    branches: [main]
+    paths: ["TP3/infra/terraform/gke/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+env:
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT }}
+  TF_VAR_region: ${{ vars.GCP_REGION }}
+  TF_VAR_nodes_service_account: ${{ vars.GKE_NODES_SA }}
+
+jobs:
+  terraform:
+    # Se activa cuando las GitHub Variables de GCP esten cargadas (ver TP3/infra/README.md)
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: TP3/infra/terraform/gke }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+      - run: terraform fmt -check
+      - run: terraform validate
+      - run: terraform plan -input=false -out=tfplan
+      - if: github.event_name != 'pull_request'
+        run: terraform apply -input=false tfplan

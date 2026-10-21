@@ -1,0 +1,42 @@
+# Secretos: NUNCA al repo (si se filtra uno, revocarlo: queda en el historial)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*-key.json
+*credentials*.json
+keys/
+secrets/
+!TP3/k8s/**/secret.example.yaml
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+.terraform.lock.hcl.bak
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Resultados locales
+logs/
+*.log
+TP3/loadtest/results/
+TP3/loadtest/images/
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

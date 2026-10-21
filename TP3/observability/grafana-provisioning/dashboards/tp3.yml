@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: tp3
+    folder: TP3
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

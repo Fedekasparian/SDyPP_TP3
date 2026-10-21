@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TP3 Sobel</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; }
+    label { display: block; margin-top: .8rem; font-weight: 600; }
+    input, select { width: 100%; padding: .4rem; box-sizing: border-box; }
+    button { margin-top: 1rem; padding: .5rem 1.2rem; }
+    pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
+    img { max-width: 100%; margin-top: 1rem; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>TP3: procesamiento distribuido de imágenes</h1>
+  <form id="f">
+    <label>Token (Bearer)</label><input id="token" required>
+    <label>Imágenes</label><input id="files" type="file" accept="image/*" multiple required>
+    <label>Operaciones (encadenadas, separadas por coma)</label><input id="ops" value="sobel">
+    <label>Imagen de worker</label><input id="worker" value="tp3-worker">
+    <button>Enviar</button>
+  </form>
+  <pre id="out"></pre>
+  <div id="imgs"></div>
+<script>
+const out = document.getElementById("out"), imgs = document.getElementById("imgs");
+const hdr = () => ({ Authorization: "Bearer " + document.getElementById("token").value });
+document.getElementById("f").onsubmit = async (e) => {
+  e.preventDefault(); imgs.innerHTML = "";
+  const fd = new FormData();
+  for (const f of document.getElementById("files").files) fd.append("files", f);
+  fd.append("ops", document.getElementById("ops").value);
+  fd.append("worker_image", document.getElementById("worker").value);
+  const res = await fetch("/api/jobs", { method: "POST", body: fd, headers: hdr() });
+  const body = await res.json(); out.textContent = JSON.stringify(body, null, 2);
+  if (res.ok) poll(body.job_id);
+};
+async function poll(id) {
+  const res = await fetch("/api/jobs/" + id, { headers: hdr() });
+  const job = await res.json(); out.textContent = JSON.stringify(job, null, 2);
+  if (["queued", "processing"].includes(job.status)) return setTimeout(() => poll(id), 1000);
+  for (const url of job.results || []) {
+    const blob = await (await fetch("/api" + url, { headers: hdr() })).blob();
+    const img = document.createElement("img"); img.src = URL.createObjectURL(blob); imgs.appendChild(img);
+  }
+}
+</script>
+</body>
+</html>

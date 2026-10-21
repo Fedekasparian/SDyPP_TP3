@@ -1,0 +1,73 @@
+# split, joiner y dlq-monitor. El worker corre en VMs fuera del cluster en GKE
+# (Hit #3); para Kubernetes local se agrega con el overlay `local` (worker.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: split
+  labels: { app: split, tier: apps }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: split } }
+  template:
+    metadata: { labels: { app: split, tier: apps } }
+    spec:
+      containers:
+        - name: split
+          image: tp3/split
+          ports: [{ name: http, containerPort: 8080 }]
+          envFrom: [{ configMapRef: { name: tp3-config } }, { secretRef: { name: tp3-secrets } }]
+          readinessProbe: { httpGet: { path: /health, port: http }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: joiner
+  labels: { app: joiner, tier: apps }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: joiner } }
+  template:
+    metadata: { labels: { app: joiner, tier: apps } }
+    spec:
+      containers:
+        - name: joiner
+          image: tp3/joiner
+          ports: [{ name: http, containerPort: 8080 }]
+          envFrom: [{ configMapRef: { name: tp3-config } }, { secretRef: { name: tp3-secrets } }]
+          readinessProbe: { httpGet: { path: /health, port: http }, periodSeconds: 10 }
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { cpu: "1", memory: 1Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dlq-monitor
+  labels: { app: dlq-monitor, tier: apps }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: dlq-monitor } }
+  template:
+    metadata: { labels: { app: dlq-monitor, tier: apps } }
+    spec:
+      containers:
+        - name: dlq-monitor
+          image: tp3/dlq-monitor
+          ports: [{ name: http, containerPort: 8080 }]
+          envFrom: [{ configMapRef: { name: tp3-config } }, { secretRef: { name: tp3-secrets } }]
+          readinessProbe: { httpGet: { path: /health, port: http }, periodSeconds: 10 }
+          resources: { requests: { cpu: 50m, memory: 128Mi }, limits: { cpu: 500m, memory: 256Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: split, labels: { app: split, metrics: "true" } }
+spec: { selector: { app: split }, ports: [{ name: http, port: 8080, targetPort: http }] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: joiner, labels: { app: joiner, metrics: "true" } }
+spec: { selector: { app: joiner }, ports: [{ name: http, port: 8080, targetPort: http }] }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: dlq-monitor, labels: { app: dlq-monitor, metrics: "true" } }
+spec: { selector: { app: dlq-monitor }, ports: [{ name: http, port: 8080, targetPort: http }] }

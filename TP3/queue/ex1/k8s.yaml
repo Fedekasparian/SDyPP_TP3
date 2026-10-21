@@ -1,0 +1,43 @@
+# Ej. 1 en Kubernetes, contra el RabbitMQ de TP3/k8s/overlays/local (namespace tp3).
+#   kubectl apply -f TP3/queue/ex1/k8s.yaml
+#   kubectl -n tp3 logs -l app=ex1-consumer -f --prefix
+#   kubectl -n tp3 delete job ex1-producer && kubectl apply -f TP3/queue/ex1/k8s.yaml   # reenviar
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ex1-consumer, namespace: tp3, labels: { app: ex1-consumer } }
+spec:
+  replicas: 2   # 1 para el primer caso, 2 para ver el round-robin
+  selector: { matchLabels: { app: ex1-consumer } }
+  template:
+    metadata: { labels: { app: ex1-consumer } }
+    spec:
+      containers:
+        - name: consumer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex1/consumer.py"]
+          env:
+            - { name: PREFETCH, value: "1" }
+            - { name: WORK_SECONDS, value: "0.5" }
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: ex1-producer, namespace: tp3 }
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: producer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex1/producer.py"]
+          env:
+            - { name: N_TASKS, value: "10" }
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }

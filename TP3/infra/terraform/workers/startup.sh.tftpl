@@ -1,0 +1,28 @@
+#!/bin/bash
+# Bootstrap del worker (equivalente a user_data). NO contiene secretos: los lee
+# de Secret Manager con la identidad de la VM.
+set -euxo pipefail
+
+# 1) Bootstrap: herramientas
+if ! command -v docker >/dev/null; then
+  apt-get update
+  apt-get install -y docker.io
+  systemctl enable --now docker
+fi
+
+# 2) Deploy: auth al registry privado con el SA de la VM (sin claves) y pull
+gcloud auth configure-docker ${region}-docker.pkg.dev --quiet
+docker pull ${worker_image}
+
+RABBIT_PASS=$(gcloud secrets versions access latest --secret=tp3-rabbit-pass)
+REDIS_PASS=$(gcloud secrets versions access latest --secret=tp3-redis-pass)
+
+# 3) Join: el worker se conecta a RabbitMQ/Redis (con retry + backoff) y empieza a consumir
+docker rm -f tp3-worker || true
+docker run -d --name tp3-worker --restart unless-stopped -p 8080:8080 \
+  -e RABBIT_URL="amqp://tp3:$${RABBIT_PASS}@${rabbit_host}:5672/" \
+  -e REDIS_URL="redis://:$${REDIS_PASS}@${redis_host}:6379/0" \
+  -e WORKER_POOL=${worker_pool} \
+  -e ALLOWED_WORKER_IMAGES=${worker_pool} \
+  -e WORKER_ID="$(hostname)" \
+  ${worker_image}

@@ -1,0 +1,37 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: tp3-alerts
+  namespace: tp3
+spec:
+  groups:
+    - name: tp3
+      rules:
+        - alert: ColaDeTareasAlta
+          expr: max(tasks_queued{queue=~"tasks\\.tp3-.*"}) > 100
+          for: 2m
+          labels: { severity: warning }
+          annotations:
+            summary: "Mas de 100 fragmentos esperando en {{ $labels.queue }}"
+            description: "Escalar workers (pipeline workers.yml) o revisar si estan caidos."
+        - alert: WorkersSinProcesar
+          expr: |
+            sum(rate(tasks_processed_total{service="worker"}[2m])) == 0
+            and sum(tasks_queued{queue=~"tasks\\.tp3-.*"}) > 0
+          for: 1m
+          labels: { severity: critical }
+          annotations:
+            summary: "Hay tareas en cola pero ningun worker procesa hace 1 minuto"
+        - alert: FragmentosEstacionadosEnDLQ
+          expr: max(tasks_queued{queue="tasks.parked"}) > 0
+          for: 1m
+          labels: { severity: warning }
+          annotations:
+            summary: "Hay fragmentos que agotaron reintentos: POST /admin/dlq/reprocess"
+        - alert: TasaDeErroresAlta
+          expr: |
+            sum(rate(task_errors_total[5m])) / clamp_min(sum(rate(tasks_processed_total[5m])), 1) > 0.05
+          for: 5m
+          labels: { severity: warning }
+          annotations:
+            summary: "Mas del 5% de las tareas fallan"

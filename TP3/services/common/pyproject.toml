@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tp3common"
+version = "0.1.0"
+description = "Libreria compartida del TP3: contratos de mensajeria, Redis, auth, operaciones de imagen, logging y metricas"
+requires-python = ">=3.11"
+dependencies = [
+    "pika==1.3.2",
+    "redis==5.0.8",
+    "numpy==2.1.1",
+    "pillow==10.4.0",
+    "prometheus-client==0.21.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.3.3"]
+
+[tool.setuptools]
+packages = ["tp3common"]
