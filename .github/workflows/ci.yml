@@ -23,6 +23,24 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.4-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 20
+      rabbitmq:
+        image: rabbitmq:3.13-management
+        ports: ["5672:5672"]
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s --health-timeout 5s --health-retries 30
+    env:
+      TP3_INTEGRATION: "1"
+      REDIS_URL: redis://localhost:6379/15
+      RABBIT_URL: amqp://guest:guest@localhost:5672/
+      LOG_DIR: /tmp/tp3-test-logs
     defaults:
       run: { working-directory: TP3/services }
     steps:
