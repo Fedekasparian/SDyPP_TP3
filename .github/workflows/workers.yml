@@ -32,6 +32,8 @@ env:
 
 jobs:
   terraform:
+    # Se activa cuando las GitHub Variables de GCP esten cargadas (ver TP3/infra/README.md)
+    if: vars.GCP_PROJECT != ''
     runs-on: ubuntu-latest
     defaults:
       run: { working-directory: TP3/infra/terraform/workers }
