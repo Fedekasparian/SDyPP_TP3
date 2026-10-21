@@ -1,0 +1,12 @@
+tp3-b-backend-1	running	healthy
+tp3-b-backend-2	running	healthy
+tp3-b-backend-3	running	healthy
+tp3-b-dlq-monitor-1	running	
+tp3-b-frontend-1	running	
+tp3-b-joiner-1	running	
+tp3-b-rabbitmq-1	running	healthy
+tp3-b-redis-1	running	healthy
+tp3-b-split-1	running	
+tp3-b-worker-1	running	
+tp3-b-worker-2	running	
+tp3-b-worker-3	running	

@@ -1,0 +1,7 @@
+# Override local: tres backends detras del proxy frontend, sin puertos host repetidos.
+# docker compose -f docker-compose.yml -f docker-compose.r4.yml up -d --build --scale backend=3 --scale worker=3
+services:
+  backend:
+    ports: !reset []
+    deploy:
+      replicas: 3
