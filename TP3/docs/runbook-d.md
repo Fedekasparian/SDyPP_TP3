@@ -16,15 +16,17 @@ Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 | ⬜ | Escribir el informe → **paso 9** |
 | ⬜ | Guion y grabación del video (coordina D) |
 
-**No hay rama `feat/d-obs-load` todavía.** Crearla antes de empezar (paso 0).
+Todo eso está commiteado en la rama **`feat/d-obs-load`** (commit `343c9c8`), que
+**todavía no se pusheó**. El PR se abre cuando la evidencia esté adentro.
+
+**Se retoma en el paso 1.**
 
 ---
 
-## Paso 0 — Rama
+## Paso 0 — Carpetas de evidencia (la rama ya existe)
 
 ```bash
-git checkout main && git pull
-git checkout -b feat/d-obs-load
+git branch --show-current          # feat/d-obs-load
 mkdir -p TP3/evidencia/hit4 TP3/evidencia/r5
 ```
 
