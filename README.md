@@ -46,10 +46,11 @@ docker-compose.yml       stack completo local
 - Pipeline end-to-end en docker compose: submit → split → N workers → joiner → `done`.
 - Validación R2 antes de encolar, roles y aislamiento R4 (el script pasa los 5 casos), `/stats`, DLQ con reintentos y estacionamiento, y reprocesamiento por el admin.
 - Health-checks JSON, logs en memoria, stdout y archivo, y métricas Prometheus.
-- 27 tests unitarios, k6 probado contra el compose y Terraform validado (`terraform validate`).
+- Suite de pruebas unitarias e integración real con Redis/RabbitMQ en CI. Progreso SSE, panel admin y evidencia R4 con tres backends locales: [parte B](TP3/docs/parte-b.md).
+- k6 probado contra el compose y Terraform validado (`terraform validate`) según la base del proyecto.
 
 **Falta:**
-- Hit #0 (ex1 a ex5) y la documentación y demo del Hit #1.
+- Ejecutar evidencia R4 en GKE después del despliegue del frente C. La corrida local registrada usa Docker Compose.
 - Aplicar la infraestructura en GCP y cargar las GitHub Variables ([infra/README.md](TP3/infra/README.md)), y la evidencia de R1.
 - Observabilidad en GKE, la matriz R5 completa, el informe y el video.
 
