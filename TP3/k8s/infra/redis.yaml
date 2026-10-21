@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  labels: { app: redis, tier: infra }
+spec:
+  serviceName: redis
+  replicas: 1
+  selector: { matchLabels: { app: redis } }
+  template:
+    metadata: { labels: { app: redis, tier: infra } }
+    spec:
+      nodeSelector: { pool: infra }
+      tolerations: [{ key: pool, operator: Equal, value: infra, effect: NoSchedule }]
+      containers:
+        - name: redis
+          image: redis:7.4-alpine
+          args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: redis-auth, key: redis-password } }
+          ports: [{ name: redis, containerPort: 6379 }]
+          volumeMounts: [{ name: data, mountPath: /data }]
+          readinessProbe:
+            exec: { command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep PONG"] }
+            periodSeconds: 10
+          resources:
+            requests: { cpu: 100m, memory: 512Mi }
+            limits: { cpu: 500m, memory: 2Gi }
+        - name: exporter
+          image: oliver006/redis_exporter:v1.62.0
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: redis-auth, key: redis-password } }
+          ports: [{ name: metrics, containerPort: 9121 }]
+          resources:
+            requests: { cpu: 10m, memory: 32Mi }
+            limits: { cpu: 100m, memory: 64Mi }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 8Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: redis, labels: { app: redis, metrics: "true" } }
+spec:
+  selector: { app: redis }
+  ports:
+    - { name: redis, port: 6379 }
+    - { name: metrics, port: 9121 }
+---
+# LoadBalancer INTERNO para las VMs workers. Su IP va a REDIS_INTERNAL_IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-internal
+  annotations: { networking.gke.io/load-balancer-type: "Internal" }
+spec:
+  type: LoadBalancer
+  selector: { app: redis }
+  ports: [{ name: redis, port: 6379 }]

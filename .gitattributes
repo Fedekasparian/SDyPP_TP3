@@ -1,0 +1,3 @@
+# Finales de linea LF en el repo (los scripts .sh y startup corren en Linux)
+* text=auto eol=lf
+*.png binary

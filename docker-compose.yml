@@ -1,0 +1,84 @@
+# Stack completo para integrar en local, sin Kubernetes.
+#   cp .env.example .env   (y completar)
+#   docker compose up --build --scale worker=3
+#   docker compose --profile obs up   -> suma Prometheus (9090) y Grafana (3000)
+x-app: &app
+  env_file: .env
+  restart: unless-stopped
+  depends_on:
+    rabbitmq: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBIT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
+    volumes:
+      - ./TP3/observability/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+    ports: ["5672:5672", "15672:15672", "15692:15692"]
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  backend:
+    <<: *app
+    build: { context: TP3/services, dockerfile: backend/Dockerfile }
+    image: tp3/backend:dev
+    ports: ["8000:8000"]
+
+  split:
+    <<: *app
+    build: { context: TP3/services, dockerfile: Dockerfile.consumer, args: { SERVICE: split } }
+    image: tp3/split:dev
+
+  joiner:
+    <<: *app
+    build: { context: TP3/services, dockerfile: Dockerfile.consumer, args: { SERVICE: joiner } }
+    image: tp3/joiner:dev
+
+  worker:
+    <<: *app
+    build: { context: TP3/services, dockerfile: Dockerfile.consumer, args: { SERVICE: worker } }
+    image: tp3/worker:dev
+    environment:
+      FAIL_RATE: ${FAIL_RATE:-0}   # FAIL_RATE=0.5 docker compose up -d worker -> prueba la DLQ
+
+  dlq-monitor:
+    <<: *app
+    build: { context: TP3/services, dockerfile: Dockerfile.consumer, args: { SERVICE: dlq_monitor } }
+    image: tp3/dlq-monitor:dev
+
+  frontend:
+    build: { context: TP3/services, dockerfile: frontend/Dockerfile }
+    image: tp3/frontend:dev
+    ports: ["8081:8080"]
+    depends_on: [backend]
+
+  prometheus:
+    profiles: [obs]
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./TP3/observability/prometheus-compose.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+
+  grafana:
+    profiles: [obs]
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    volumes:
+      - ./TP3/observability/grafana-provisioning:/etc/grafana/provisioning:ro
+      - ./TP3/observability/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]

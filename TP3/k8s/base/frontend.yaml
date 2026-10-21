@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels: { app: frontend, tier: apps }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend, tier: apps } }
+    spec:
+      containers:
+        - name: frontend
+          image: tp3/frontend
+          ports: [{ name: http, containerPort: 8080 }]
+          readinessProbe: { httpGet: { path: /health, port: http }, periodSeconds: 10 }
+          resources: { requests: { cpu: 20m, memory: 32Mi }, limits: { cpu: 200m, memory: 128Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: frontend, labels: { app: frontend } }
+spec: { selector: { app: frontend }, ports: [{ name: http, port: 80, targetPort: http }] }
+---
+# Entrada publica: / -> frontend (que proxya /api -> backend). Health-checks publicos:
+#   /health (frontend) y /api/health (backend).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tp3
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: frontend, port: { number: 80 } } }

@@ -1,0 +1,13 @@
+# Scrapea todo Service del namespace tp3 con label metrics=true.
+# Apps: puerto `http` en /metrics. RabbitMQ y Redis: puerto `metrics`.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tp3-apps
+  namespace: tp3
+spec:
+  selector:
+    matchLabels: { metrics: "true" }
+  endpoints:
+    - { port: http, path: /metrics, interval: 10s }
+    - { port: metrics, path: /metrics, interval: 15s }

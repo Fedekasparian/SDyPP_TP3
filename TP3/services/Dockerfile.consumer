@@ -1,0 +1,14 @@
+# Imagen generica para los consumidores (worker, split, joiner, dlq_monitor).
+# Build context: TP3/services
+#   docker build -f Dockerfile.consumer --build-arg SERVICE=worker -t tp3/worker .
+FROM python:3.12-slim
+ARG SERVICE
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 LOG_DIR=/var/log/tp3 SERVICE=${SERVICE}
+COPY common /app/common
+RUN pip install --no-cache-dir /app/common
+COPY ${SERVICE} /app/${SERVICE}
+RUN useradd -m app && mkdir -p /var/log/tp3 && chown app /var/log/tp3
+USER app
+EXPOSE 8080
+CMD ["sh", "-c", "exec python -m ${SERVICE}.main"]

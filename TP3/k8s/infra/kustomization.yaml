@@ -1,0 +1,9 @@
+# Servicios base en GKE (Pipeline 1.1), en el nodepool `infra`.
+# Requiere los Secrets `rabbitmq-auth` (key rabbitmq-password) y `redis-auth`
+# (key redis-password), que crea deploy.yml desde Secret Manager.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: tp3
+resources:
+  - rabbitmq.yaml
+  - redis.yaml

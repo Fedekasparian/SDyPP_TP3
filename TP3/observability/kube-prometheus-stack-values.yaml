@@ -1,0 +1,39 @@
+# helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+#   -n monitoring --create-namespace -f TP3/observability/kube-prometheus-stack-values.yaml
+# Todo en el nodepool `infra`.
+x-infra: &infra
+  nodeSelector: { pool: infra }
+  tolerations: [{ key: pool, operator: Equal, value: infra, effect: NoSchedule }]
+
+prometheusOperator: *infra
+kube-state-metrics: *infra
+alertmanager:
+  alertmanagerSpec: *infra
+prometheus:
+  prometheusSpec:
+    <<: *infra
+    retention: 3d
+    # Levanta ServiceMonitors/PrometheusRules de cualquier namespace sin exigir labels del chart
+    serviceMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    # TODO (D): scrape de las VMs workers (fuera del cluster) por GCE service discovery.
+    # Requiere que el SA de nodos tenga roles/compute.viewer.
+    additionalScrapeConfigs:
+      - job_name: tp3-vm-workers
+        gce_sd_configs:
+          - { project: PROJECT, zone: us-central1-a, port: 8080, filter: 'labels.app = "tp3-worker"' }
+          - { project: PROJECT, zone: us-central1-b, port: 8080, filter: 'labels.app = "tp3-worker"' }
+          - { project: PROJECT, zone: us-central1-c, port: 8080, filter: 'labels.app = "tp3-worker"' }
+        relabel_configs:
+          - { source_labels: [__meta_gce_instance_name], target_label: instance }
+grafana:
+  <<: *infra
+  # Contraseña de admin desde un Secret (no en el repo):
+  #   kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-user=admin --from-literal=admin-password=...
+  admin:
+    existingSecret: grafana-admin
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      searchNamespace: ALL

@@ -1,0 +1,71 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: rabbitmq-plugins }
+data:
+  enabled_plugins: "[rabbitmq_management,rabbitmq_prometheus]."
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rabbitmq
+  labels: { app: rabbitmq, tier: infra }
+spec:
+  serviceName: rabbitmq
+  replicas: 1
+  selector: { matchLabels: { app: rabbitmq } }
+  template:
+    metadata: { labels: { app: rabbitmq, tier: infra } }
+    spec:
+      nodeSelector: { pool: infra }
+      tolerations: [{ key: pool, operator: Equal, value: infra, effect: NoSchedule }]
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:3.13-management
+          env:
+            - { name: RABBITMQ_DEFAULT_USER, value: tp3 }
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } }
+          ports:
+            - { name: amqp, containerPort: 5672 }
+            - { name: mgmt, containerPort: 15672 }
+            - { name: metrics, containerPort: 15692 }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/rabbitmq }
+            - { name: plugins, mountPath: /etc/rabbitmq/enabled_plugins, subPath: enabled_plugins }
+          readinessProbe:
+            exec: { command: ["rabbitmq-diagnostics", "-q", "ping"] }
+            periodSeconds: 15
+            timeoutSeconds: 10
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 1Gi }
+      volumes:
+        - name: plugins
+          configMap: { name: rabbitmq-plugins }
+  volumeClaimTemplates:
+    - metadata: { name: data }
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources: { requests: { storage: 8Gi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: rabbitmq, labels: { app: rabbitmq, metrics: "true" } }
+spec:
+  selector: { app: rabbitmq }
+  ports:
+    - { name: amqp, port: 5672 }
+    - { name: mgmt, port: 15672 }
+    - { name: metrics, port: 15692 }
+---
+# LoadBalancer INTERNO (solo dentro del VPC): lo usan las VMs workers fuera del cluster.
+# Su IP va a la GitHub Variable RABBIT_INTERNAL_IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-internal
+  annotations: { networking.gke.io/load-balancer-type: "Internal" }
+spec:
+  type: LoadBalancer
+  selector: { app: rabbitmq }
+  ports: [{ name: amqp, port: 5672 }]
