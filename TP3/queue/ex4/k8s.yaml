@@ -1,0 +1,43 @@
+# Ej. 4 en Kubernetes: consumidor con retry y productor. Los mensajes que agotan los
+# reintentos llegan a ex3.dlq, asi que conviene tener aplicado ex3-dlq-consumer:
+#   kubectl apply -f TP3/queue/ex3/k8s.yaml -f TP3/queue/ex4/k8s.yaml
+#   kubectl -n tp3 logs deploy/ex4-consumer -f
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ex4-consumer, namespace: tp3, labels: { app: ex4-consumer } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ex4-consumer } }
+  template:
+    metadata: { labels: { app: ex4-consumer } }
+    spec:
+      containers:
+        - name: consumer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex4/consumer_retry.py"]
+          env:
+            - { name: FAIL_PROB, value: "0.5" }
+            - { name: SEED, value: "7" }
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: ex4-producer, namespace: tp3 }
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: producer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex4/producer.py"]
+          env:
+            - { name: N_MSGS, value: "5" }
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }

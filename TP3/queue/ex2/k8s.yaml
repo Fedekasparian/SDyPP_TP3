@@ -1,0 +1,43 @@
+# Ej. 2 en Kubernetes: 3 nodos suscriptores (Deployment) y un publicador (Job).
+#   kubectl apply -f TP3/queue/ex2/k8s.yaml
+#   kubectl -n tp3 logs -l app=ex2-subscriber -f --prefix
+# El Job espera START_DELAY segundos para que los suscriptores ya esten bindeados:
+# un fanout sin colas bindeadas descarta el mensaje.
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ex2-subscriber, namespace: tp3, labels: { app: ex2-subscriber } }
+spec:
+  replicas: 3
+  selector: { matchLabels: { app: ex2-subscriber } }
+  template:
+    metadata: { labels: { app: ex2-subscriber } }
+    spec:
+      containers:
+        - name: subscriber
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex2/subscriber.py"]
+          env:
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: ex2-publisher, namespace: tp3 }
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: publisher
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex2/publisher.py"]
+          env:
+            - { name: START_DELAY, value: "15" }
+            - { name: N_BLOCKS, value: "5" }
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }

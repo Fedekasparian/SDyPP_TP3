@@ -1,0 +1,59 @@
+# Ej. 3 en Kubernetes: consumidor principal, consumidor de la DLQ y productor.
+#   kubectl apply -f TP3/queue/ex3/k8s.yaml
+#   kubectl -n tp3 logs deploy/ex3-consumer -f
+#   kubectl -n tp3 logs deploy/ex3-dlq-consumer -f
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ex3-consumer, namespace: tp3, labels: { app: ex3-consumer } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ex3-consumer } }
+  template:
+    metadata: { labels: { app: ex3-consumer } }
+    spec:
+      containers:
+        - name: consumer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex3/consumer.py"]
+          env:
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: ex3-dlq-consumer, namespace: tp3, labels: { app: ex3-dlq-consumer } }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: ex3-dlq-consumer } }
+  template:
+    metadata: { labels: { app: ex3-dlq-consumer } }
+    spec:
+      containers:
+        - name: dlq-consumer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex3/dlq_consumer.py"]
+          env:
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
+---
+apiVersion: batch/v1
+kind: Job
+metadata: { name: ex3-producer, namespace: tp3 }
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: producer
+          image: tp3/queue-examples:dev
+          imagePullPolicy: IfNotPresent
+          command: ["python", "ex3/producer.py"]
+          env:
+            - { name: RABBIT_HOST, value: rabbitmq }
+            - { name: RABBIT_USER, value: tp3 }
+            - { name: RABBIT_PASS, valueFrom: { secretKeyRef: { name: rabbitmq-auth, key: rabbitmq-password } } }
