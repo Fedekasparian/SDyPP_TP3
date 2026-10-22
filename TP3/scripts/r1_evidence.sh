@@ -14,8 +14,9 @@ for command in gcloud kubectl tee; do
 done
 
 CONTEXT="$(kubectl config current-context)"
-if [[ "$CONTEXT" != *minikube* ]]; then
-  echo "This evidence script expects a Minikube context (current: $CONTEXT)." >&2
+# Debe correr en el cluster LOCAL (k3d/k3s/minikube), que no tiene acceso al registry.
+if [[ "$CONTEXT" == gke_* ]]; then
+  echo "Contexto GKE detectado ($CONTEXT): usar un cluster local sin credenciales del registry." >&2
   exit 1
 fi
 
