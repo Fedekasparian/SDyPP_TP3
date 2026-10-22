@@ -3,23 +3,45 @@
 Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 **Git Bash en Windows**, desde la raíz del repo.
 
-## Estado al 21/10/2026 (lo ya hecho)
+## Estado al 22/10/2026
 
 | | |
 |---|---|
-| ✅ | `.env` creado con `RABBIT_PASS` y `AUTH_SECRET` generados (está en `.gitignore`, **no se commitea**) |
-| ✅ | Las 6 imágenes `tp3/*:dev` construidas, y RabbitMQ, Redis, Prometheus, Grafana y `grafana/k6:0.54.0` descargadas |
-| ✅ | Métricas de RabbitMQ **por cola** activadas (`observability/rabbitmq/prometheus.conf`, montado en compose y en `k8s/infra/rabbitmq.yaml`) |
-| ✅ | `observability/alerts-compose.yml`: las 4 alertas en formato nativo + `rule_files` en `prometheus-compose.yml`. Validadas con `promtool` (4 rules found) |
-| ✅ | `loadtest/run_matrix.sh` reescrito: detecta k6 (binario o Docker), detecta `py`/`python`, modo `SMOKE`, modo `QUICK`, timeout por celda y es retomable |
-| ⬜ | Correr la matriz y capturar la evidencia → **pasos 1 a 8** |
-| ⬜ | Escribir el informe → **paso 9** |
-| ⬜ | Guion y grabación del video (coordina D) |
+| ✅ | `.env`, las 6 imágenes `tp3/*:dev` y las imágenes de V1 (`loadtest/images/`) |
+| ✅ | Métricas de RabbitMQ **por cola** y las 4 alertas en formato nativo, validadas |
+| ✅ | `run_matrix.sh` arreglado y endurecido (ver "Qué se arregló") |
+| ✅ | `summarize.py` reescrito: emite **siempre** las 108 filas esperadas |
+| ✅ | 4 capturas de Grafana en `evidencia/hit4/` + `contexto_capturas.txt` |
+| ✅ | Informe: §6 (salvo 6.4), §8 (salvo 8.4), §9, §10 y §11 escritas |
+| 🔄 | Matriz R5 |
+| ⬜ | Paso 8: alerta disparada y casos de falla → `scripts/evidencia_hit4_r5.sh` |
+| ⬜ | Capturas de los paneles de errores y latencia de worker |
+| ⬜ | Guion y grabación del video |
 
-Todo eso está commiteado en la rama **`feat/d-obs-load`** (commit `343c9c8`), que
-**todavía no se pusheó**. El PR se abre cuando la evidencia esté adentro.
+**Nada está pusheado.** Los commits los hace D.
 
-**Se retoma en el paso 1.**
+---
+
+## Trampas de ESTA máquina (todas costaron tiempo)
+
+| Síntoma | Causa y solución |
+|---|---|
+| `no pude emitir tokens: 404` con una página HTML de Laravel | **El puerto 8000 está compartido**: hay un servidor `php` en `127.0.0.1:8000` además de Docker en `::`. `curl localhost:8000` sale por IPv6 y llega al FastAPI, pero un contenedor que entra por `host.docker.internal` cae en el loopback IPv4, o sea en el php. Ya resuelto: k6 corre dentro de la red de compose y usa `http://backend:8000`. **No hay que matar el php.** |
+| Docker devuelve 500 en toda la API | Una celda agotó la RAM. Matar los procesos de Docker, `wsl --shutdown`, relanzar Docker Desktop (está en `%LOCALAPPDATA%\Programs\DockerDesktop`, **no** en `Program Files`). Ya mitigado con `K6_MEMORY`. |
+| Celdas pesadas que se cortan sin dejar JSON | **Mirar la memoria de Redis**: `docker compose exec -T redis redis-cli INFO memory`. Los fragmentos tienen TTL de 24 h, así que durante una sesión de medición **nada expira** y Redis crece con el throughput acumulado (llegó a 2,91 GB con 602.484 claves). Vaciar entre corridas con `docker compose exec -T redis redis-cli FLUSHDB`. |
+| `python` no existe | Usar **`py`**. Los scripts ya detectan cuál hay. |
+| `-w C:/Program Files/Git/lt` | Git Bash reescribe rutas de Docker. Resuelto con `MSYS_NO_PATHCONV=1` dentro del script. |
+| Paneles de CPU/memoria por pod y nodo vacíos | Normal en compose: salen de cAdvisor y node-exporter, que solo existen en k8s. Declarado en el informe §6.3. |
+| `(thresholds no cumplidos)` | **No es un error.** Es k6 avisando que esa celda no cumplió el SLO. Va a la columna `slo_ok`. |
+
+## Qué se arregló de `run_matrix.sh` (22/10)
+
+1. **`cd ../../..`** al escalar workers: un nivel de más desde `TP3/loadtest`, caía fuera del repo y moría en la celda cero. Ahora usa `REPO_ROOT`.
+2. **k6 entra por la red de compose** (`K6_NETWORK`) en vez de `host.docker.internal`. Ver la tabla de trampas.
+3. **El humo guarda con prefijo `smoke`**: antes usaba los mismos nombres de celda que la matriz real, y 8 de las 108 habrían quedado medidas con la meseta corta del humo, sin aviso.
+4. **`JOB_TIMEOUT_S`**: antes `TIMEOUT_S` ni se le pasaba a k6 y quedaba en 120 s, con lo que una celda saturada se moría antes de escribir su JSON. Cota: `RAMP + DURATION + 5s + JOB_TIMEOUT_S < CELL_TIMEOUT`.
+5. **`K6_MEMORY`** (1500m): techo de memoria del contenedor de k6, para que una celda que no entra muera sola en vez de llevarse puesto el motor de Docker.
+6. **`MODE=none`**: no toca los workers. Lo usa el script de evidencia, que los apaga a propósito.
 
 ---
 
@@ -82,17 +104,43 @@ SMOKE=1 ./TP3/loadtest/run_matrix.sh
 larga. Al final imprime el resumen; revisar que `tasa_error` sea baja y que
 `p95_s` tenga un número (no `nan`).
 
-## Paso 6 — Matriz R5 completa (≈1 h, dejarla corriendo)
+## Paso 6 — Matriz R5, en pasadas
+
+**No correrla de un saque.** Las celdas no pesan lo mismo: con imágenes de 10 KB
+la más pesada mueve 25 MB, pero con las de 1 MB, 50 archivos por request y 50
+usuarios son 2,5 GB en vuelo. Partirla en pasadas hace que un fallo en las
+pesadas no arrastre lo ya medido, y el script es retomable: saltea toda celda
+que ya tenga JSON.
 
 ```bash
-QUICK=1 ./TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/evidencia/r5/corrida_r5.log
+export ADMIN_TOKEN=$(docker compose exec -T backend python /dev/stdin admin admin < TP3/scripts/gen_token.py)
+
+# Pasada 1: las 54 celdas livianas (~35 min)
+QUICK=1 JOB_TIMEOUT_S=30 V1_LIST=10KB ./TP3/loadtest/run_matrix.sh 2>&1 | tee -a TP3/evidencia/r5/corrida_r5.log
+
+# Vaciar Redis entre pasadas (ver la tabla de trampas: si no, se llena y las
+# celdas pesadas se cortan)
+docker compose exec -T redis redis-cli FLUSHDB
+
+# Pasada 2: 1 MB con VA=1 y VA=10 (36 celdas)
+QUICK=1 JOB_TIMEOUT_S=30 V1_LIST=1MB VA_LIST=1  ./TP3/loadtest/run_matrix.sh 2>&1 | tee -a TP3/evidencia/r5/corrida_r5.log
+QUICK=1 JOB_TIMEOUT_S=30 V1_LIST=1MB VA_LIST=10 ./TP3/loadtest/run_matrix.sh 2>&1 | tee -a TP3/evidencia/r5/corrida_r5.log
+
+# Pasada 3: 1 MB con VA=50, solo VC 1 y 10 (12 celdas)
+QUICK=1 JOB_TIMEOUT_S=30 V1_LIST=1MB VA_LIST=50 VC_LIST="1 10" ./TP3/loadtest/run_matrix.sh 2>&1 | tee -a TP3/evidencia/r5/corrida_r5.log
 ```
 
-108 celdas (VA×VB×VC × 2 de V1 × 2 de V3), meseta de 20 s cada una. Es
-retomable: si se corta, el mismo comando sigue donde quedó.
+Las 6 celdas restantes (`1MB`, `VA=50`, `VC=50`) no entran en la RAM de esta
+máquina y están **declaradas** en `loadtest/celdas_declaradas.csv`.
 
-Mientras corre, hacer el paso 7. Al final queda
-`TP3/loadtest/results/summary.md`, que es la tabla de R5.
+Al terminar, `py TP3/loadtest/summarize.py` imprime el balance:
+
+```
+matriz r5: 108 celdas esperadas | N medidas | 6 declaradas | M SIN MEDIR
+```
+
+**Si `M` no es cero, hay que correr esas celdas o declararlas.** El resumen las
+lista una por una. Mientras tanto hacer el paso 7.
 
 ## Paso 7 — Capturas de Grafana *durante* la corrida
 
@@ -106,43 +154,28 @@ Guardar en `TP3/evidencia/hit4/`:
 Anotar en un `.txt` al lado qué celda estaba corriendo en cada captura: eso es
 la columna **`cuello_de_botella`** del `summary.md`, que se completa a mano.
 
-## Paso 8 — Disparar la alerta (entregable del Hit #4)
+## Paso 8 — Alerta disparada y casos de falla (entregable del Hit #4 + R5)
+
+Todo automatizado. **No correrlo mientras la matriz esté corriendo**: apaga y
+prende workers y les cambia el `FAIL_RATE`.
 
 ```bash
-docker compose stop worker                       # nadie consume
-SMOKE=1 VA_LIST=50 VC_LIST=10 ./TP3/loadtest/run_matrix.sh   # mete >100 fragmentos
+export ADMIN_TOKEN=$(docker compose exec -T backend python /dev/stdin admin admin < TP3/scripts/gen_token.py)
+./TP3/scripts/evidencia_hit4_r5.sh
 ```
 
-En `http://localhost:9090/alerts`: `ColaDeTareasAlta` pasa a **PENDING** y a los
-2 minutos (`for: 2m`) a **FIRING** en rojo. Capturar los dos estados:
-`TP3/evidencia/hit4/alerta_pending.png` y `alerta_firing.png`.
+Tarda ~12 min (la alerta tiene `for: 2m`, así que hay que esperarla de verdad).
+Deja:
 
-```bash
-docker compose start worker      # vuelve a verde: capturar también la recuperación
-```
+| Archivo | Qué contiene |
+|---|---|
+| `evidencia/hit4/alertas_transicion.log` | el estado de las 4 alertas cada 15 s, con hora: `inactive → pending → firing → inactive` |
+| `evidencia/r5/stats_dlq.txt` | `/stats` antes y después de `POST /admin/dlq/reprocess` |
+| `evidencia/r5/casos_falla.log` | los 3 casos: operación inexistente, `FAIL_RATE=0.3` y worker muerto en caliente |
 
-### Casos de falla de R5 (hay que reportar cuántos a error claro, DLQ y reprocesados)
-
-```bash
-# a) operación inexistente -> debe dar 100% de 400, sin tocar la cola
-SMOKE=1 VB_LIST=sobel,rotate ./TP3/loadtest/run_matrix.sh
-
-# b) workers que fallan el 30% -> fuerza el camino de reintentos y DLQ
-FAIL_RATE=0.3 docker compose up -d --no-deps worker
-SMOKE=1 ./TP3/loadtest/run_matrix.sh
-curl -s -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/stats
-curl -s -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8000/admin/dlq/reprocess
-
-# c) worker que muere en medio de un job -> el fragmento se reasigna
-docker compose kill worker
-```
-
-Guardar las salidas de `/stats` (antes y después del reproceso) en
-`TP3/evidencia/r5/stats_dlq.txt`.
-
-```bash
-FAIL_RATE=0 docker compose up -d --no-deps worker    # dejar los workers sanos
-```
+El log de transiciones es evidencia **que no depende de que el navegador
+responda**, y muestra los horarios exactos. Las capturas de pantalla de
+`/alerts` en rojo son el complemento, no el sustituto.
 
 ## Paso 9 — Informe
 
@@ -160,14 +193,3 @@ docker compose --profile obs down          # -v si además querés borrar los vo
 ```
 
 ---
-
-## Errores típicos
-
-| Síntoma | Causa |
-|---|---|
-| `definir ADMIN_TOKEN` | Falta el paso 4. El `export` se pierde al cerrar la terminal. |
-| `no pude emitir tokens: 401` | El token no coincide con el `AUTH_SECRET` del backend. Rehacer el paso 4 (y si recreaste el `.env`, `docker compose up -d --force-recreate backend`). |
-| `-w C:/Program Files/Git/lt` | Git Bash reescribe rutas de Docker. Ya está resuelto con `MSYS_NO_PATHCONV=1` dentro del script. |
-| `(thresholds no cumplidos)` | **No es un error.** Es k6 avisando que esa celda no cumplió el SLO. Es un dato: va a la columna `slo_ok`. |
-| Paneles de CPU/memoria vacíos | Normal en docker-compose (ver paso 2). |
-| Celdas con 100% de error | El backend no está levantado. `curl localhost:8000/health`. |

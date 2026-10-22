@@ -1,0 +1,11 @@
+# Celdas que NO se pudieron medir y por que. summarize.py las emite igual como
+# filas de la tabla, con el motivo en lugar de los numeros, para que el producto
+# cruzado de R5 quede completo y ninguna ausencia pase desapercibida.
+# VB es la cantidad de operaciones encadenadas (1=sobel, 2=blur+sobel, 3=grayscale+blur+sobel).
+V1,V3,VA,VB,VC,motivo
+1MB,2,50,1,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,2,50,2,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,2,50,3,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,6,50,1,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,6,50,2,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,6,50,3,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba

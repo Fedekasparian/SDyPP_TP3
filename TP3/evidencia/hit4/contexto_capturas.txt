@@ -1,0 +1,34 @@
+Contexto de las capturas de Grafana (Hit #4)
+============================================
+Fecha: 22/10/2026. Dashboard "TP3 - Sobel distribuido" (uid tp3-main),
+Grafana 11.2.0 en docker-compose, ventana de tiempo "ultimos 15 min".
+
+Que estaba corriendo: la PASADA 1 de la matriz R5 (V1=10KB, las 54 celdas
+livianas), con 2 workers, entre las 10:21 y las 10:37. Las capturas cubren
+las primeras ~24 celdas de esa pasada.
+
+  latencia_p50_p95_p99.png            panel 8  "Latencia HTTP backend"
+  rabbitmq_mensajes_en_cola.png       panel 5  "Mensajes en cola (por cola)"
+  rabbitmq_publicados_consumidos.png  panel 6  "RabbitMQ: publicados / consumidos"
+  throughput.png                      panel 9  "Throughput (tareas/s por servicio)"
+
+Lectura rapida (para el informe, seccion 6):
+- La cola tasks.tp3-worker dibuja un diente de sierra: cada celda de k6 publica
+  su rafaga y los 2 workers la drenan antes de la siguiente. Los picos crecen de
+  ~150 a ~1.800 y al final a ~6.500 mensajes, que es cuando la matriz pasa a las
+  celdas de VA=50 (50 fragmentos por request).
+- publicados y consumidos se siguen casi superpuestos (~400 msg/s): los workers
+  mantienen el ritmo de publicacion; lo que crece es la profundidad instantanea
+  de la cola, no un atraso sostenido.
+- tasks.parked y tasks.dlq quedan planas en 0: en esta pasada no hubo
+  reintentos agotados. Los casos de DLQ se fuerzan aparte (paso 8).
+- La latencia HTTP del backend es baja (p50 ~10 ms, p95 ~30-90 ms, p99 con picos
+  a 200-450 ms). Es el tiempo de ACEPTAR el job, no de procesarlo: el
+  procesamiento end-to-end se mide en k6 (job_latency) y esta en summary.md.
+- throughput: worker, joiner y dlq-monitor se mueven juntos (~80-160 tareas/s) y
+  split queda abajo (~20), que es lo esperado: split procesa 1 mensaje por
+  request y los demas 1 por fragmento.
+
+PENDIENTE: los paneles 1 a 4 (CPU y memoria por pod y por nodo) quedan en
+"No data" en docker-compose porque salen de cAdvisor y node-exporter, que solo
+existen en Kubernetes. Va declarado en el informe (seccion 6).

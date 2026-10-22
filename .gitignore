@@ -32,7 +32,14 @@ dist/
 # Resultados locales
 logs/
 *.log
+# ...salvo los logs de evidencia: son entregables del Hit #4 y de R5.
+!TP3/evidencia/**/*.log
 TP3/loadtest/results/
+# ...pero summary.md y summary.csv SI van: son la tabla de R5 que cita el informe.
+!TP3/loadtest/results/
+TP3/loadtest/results/*
+!TP3/loadtest/results/summary.md
+!TP3/loadtest/results/summary.csv
 TP3/loadtest/images/
 
 # IDE / SO

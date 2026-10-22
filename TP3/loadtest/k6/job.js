@@ -65,21 +65,42 @@ export function setup() {
   return { tokens };
 }
 
-export function user(data) {
-  const token = data.tokens[(__VU - 1) % data.tokens.length];
-  const auth = { Authorization: `Bearer ${token}` };
-  const invalid = Math.random() < INVALID_RATE;
-
+// El cuerpo multipart se arma UNA sola vez por usuario virtual, aca en el
+// contexto de init, y no en cada iteracion.
+//
+// Motivo: la implementacion de FormData de la jslib concatena arrays de bytes en
+// JavaScript, y el pico de memoria es un multiplo grande del payload. Rearmandolo
+// en cada iteracion, una celda de VA=10 con imagenes de 1 MB (100 MB en vuelo con
+// VC=10) hacia que el proceso de k6 superara los 3 GB y lo matara el OOM killer:
+// el contenedor moria con exit 137 sin escribir el JSON de resultados, y la celda
+// desaparecia de la matriz.
+//
+// El payload es identico en todas las iteraciones, asi que armarlo una vez no
+// cambia lo que se mide; al contrario, saca del camino caliente un costo que es
+// del generador de carga y no del sistema bajo prueba.
+function armarCuerpo(invalido) {
   const fd = new FormData();
   for (let i = 0; i < VA; i++) {
-    const body = invalid && i === 0 ? "esto no es una imagen" : IMG;
+    const body = invalido && i === 0 ? "esto no es una imagen" : IMG;
     fd.append("files", http.file(body, `img${i}.png`, "image/png"));
   }
   fd.append("ops", OPS);
+  return { cuerpo: fd.body(), boundary: fd.boundary };
+}
+const PAYLOAD_OK = armarCuerpo(false);
+// Solo se arma si de verdad se van a mandar invalidos: con INVALID_RATE=0
+// duplicar el payload en memoria seria gratis para nada.
+const PAYLOAD_INVALIDO = INVALID_RATE > 0 ? armarCuerpo(true) : null;
+
+export function user(data) {
+  const token = data.tokens[(__VU - 1) % data.tokens.length];
+  const auth = { Authorization: `Bearer ${token}` };
+  const invalid = PAYLOAD_INVALIDO !== null && Math.random() < INVALID_RATE;
+  const payload = invalid ? PAYLOAD_INVALIDO : PAYLOAD_OK;
 
   const t0 = Date.now();
-  const res = http.post(`${BASE}/jobs`, fd.body(), {
-    headers: { ...auth, "Content-Type": `multipart/form-data; boundary=${fd.boundary}` },
+  const res = http.post(`${BASE}/jobs`, payload.cuerpo, {
+    headers: { ...auth, "Content-Type": `multipart/form-data; boundary=${payload.boundary}` },
     tags: { name: "POST /jobs" },
   });
   if (invalid) {
