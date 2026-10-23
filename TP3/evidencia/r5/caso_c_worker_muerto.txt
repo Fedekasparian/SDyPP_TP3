@@ -1,0 +1,46 @@
+# R5 caso c: muere UN worker con un fragmento en vuelo
+# fecha (UTC): 2026-10-23T18:59:40Z
+# stack: docker compose, 3 workers (prefetch=1, ack manual, colas quorum)
+# carga: 4 clientes curl en paralelo durante 60 s; cada POST /jobs lleva 10 archivos de 1MB, OPS=blur,blur,sobel
+# metodo: se espera a que RabbitMQ muestre un canal consumidor con un mensaje sin ack,
+# se identifica el contenedor por la IP de su conexion AMQP y se lo mata con docker kill
+# (SIGKILL: el proceso no llega a hacer ack)
+
+## consumidores de tasks.tp3-worker antes
+tasks.tp3-worker	3
+
+## workers (IP -> contenedor)
+172.18.0.9 sdypp_tp3-worker-1
+172.18.0.7 sdypp_tp3-worker-2
+172.18.0.10 sdypp_tp3-worker-3
+
+## canal con fragmento sin ack al momento del kill
+<rabbit@9a2db04b6781.1792780035.1993.0> peer=172.18.0.9 unacked=1
+
+## kill de sdypp_tp3-worker-1 (2026-10-23T19:00:30Z)
+ultima linea de log antes del kill: 2026-10-23 19:00:30,205 INFO [worker] job=1e0ccc3716e84d16bda64deaf089e774 frag=9-2 ok en 0.175s (intento 0)
+sdypp_tp3-worker-1 exited
+sdypp_tp3-worker-2 running
+sdypp_tp3-worker-3 running
+
+## fragmentos reentregados a los workers sobrevivientes (redelivered=True)
+worker-2  | 2026-10-23 19:00:32,256 INFO [worker] job=1231fe3b3fd4427891031545b917655e frag=2-2 ok en 0.205s (intento 0, reentregado)
+
+## POST /jobs por codigo HTTP
+    259 202
+
+## /stats al terminar (se espera a que no queden jobs en curso)
+{"jobs_by_status":{"queued":104,"processing":1,"done":244,"failed":4,"dlq":0},"queues":{"split.requests":102,"tasks.dlq":0,"tasks.parked":0,"tasks.tp3-worker":31},"active_workers":["d606383ae656-2af896","91a6f43c7f06-8ba03b"],"latency_s":{"p50":5.9095,"p95":238.7992,"p99":352.8744,"samples":351},"error_rate":0.0161}
+
+## nota (agregada a mano)
+- El /stats de arriba se tomo apenas termino la carga, con la cola todavia llena: 4 clientes
+  curl sin pausa generaron mas trabajo del que 2 workers drenan (104 jobs en espera).
+- Aparecieron 4 jobs "failed" durante esta corrida (antes eran 0). No se pudo ver la causa:
+  al esperar a que la cola se vaciara, el daemon de Docker Desktop dejo de responder (errores
+  500 en la API) por la presion de memoria del equipo, la misma limitacion de la seccion 8.5
+  del informe. Por eso tampoco se pudo confirmar el estado final del job 1231fe3b...
+- Lo que esta corrida si demuestra: el fragmento 2-2 que el worker muerto tenia sin ack fue
+  reentregado por RabbitMQ y procesado por worker-2 dos segundos despues del SIGKILL.
+- Intentos previos con k6 que no sirvieron como evidencia: matar un worker "a los 25 s" sin
+  verificar que tuviera un fragmento en vuelo dio 0 reentregas (no habia nada sin ack en ese
+  momento); en esos intentos los 45 y 41 jobs terminaron done con 0 errores.

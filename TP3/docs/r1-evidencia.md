@@ -26,5 +26,14 @@ Opciones (elegir una y capturar):
   ```
 - **VMs workers:** `journalctl -u google-startup-scripts` muestra `docker pull` OK con el SA de la VM.
 
-## Capturas
-_(pegar)_
+## Evidencia registrada
+Se corrió `r1_evidence.sh` en un cluster local k3d (`k3d-sdypp`) contra
+`us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest`. La salida completa está en
+[r1-20261022-235207.txt](../evidencia/r1/r1-20261022-235207.txt):
+
+1. **Sin `imagePullSecret`:** el pod `r1-probe` queda en `ImagePullBackOff` (el registry rechaza el pull anónimo).
+2. **Con el secret de token de vida corta:** el mismo Deployment hace `rollout` y el pod pasa a `Running`.
+   El evento `Successfully pulled image ... (83793537 bytes)` confirma que la imagen vino del registry privado.
+
+En GKE, el deploy de cada push a `main` es la misma prueba del lado positivo: los nodos bajan las
+imágenes con el SA `tp3-gke-nodes` y los pods quedan `Running` (`kubectl -n tp3 get pods`).

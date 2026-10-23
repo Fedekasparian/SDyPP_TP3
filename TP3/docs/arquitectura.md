@@ -74,4 +74,4 @@ flowchart TB
 - **Sin normalización por el máximo** en Sobel (se recorta a 255). Si cada fragmento normalizara por su propio máximo, los fragmentos no quedarían consistentes entre sí.
 - **Idempotencia del joiner**: `SADD` de `fragment_id` y `SET NX` del lock de armado. Los resultados duplicados por reentregas no rompen nada y con varias réplicas del joiner solo una arma la imagen.
 - **404 en lugar de 403** cuando un usuario consulta un job ajeno, para no revelar que el job existe.
-- TODO (C): diagrama de arquitectura híbrida del Hit #2, con la justificación local o nube de cada servicio, en [hit2/README.md](../hit2/README.md).
+- El diagrama de la arquitectura híbrida del Hit #2, con la justificación local o nube de cada servicio, está en [hit2/README.md](../hit2/README.md).

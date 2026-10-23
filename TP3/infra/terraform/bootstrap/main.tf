@@ -70,6 +70,15 @@ resource "google_project_iam_member" "workers" {
   member   = "serviceAccount:${google_service_account.workers.email}"
 }
 
+# Prometheus (KSA monitoring/kube-prometheus-stack-prometheus) usa el SA de nodos por Workload
+# Identity para descubrir las VMs workers (gce_sd_configs necesita compute.viewer).
+# El pool <project>.svc.id.goog existe recien cuando hay un cluster con Workload Identity.
+resource "google_service_account_iam_member" "prometheus_wi" {
+  service_account_id = google_service_account.gke_nodes.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "serviceAccount:${var.project_id}.svc.id.goog[monitoring/kube-prometheus-stack-prometheus]"
+}
+
 # Solo los nodos y los workers pueden BAJAR imagenes; nadie mas (evidencia R1).
 resource "google_artifact_registry_repository_iam_member" "readers" {
   for_each   = { nodes = google_service_account.gke_nodes.email, workers = google_service_account.workers.email }

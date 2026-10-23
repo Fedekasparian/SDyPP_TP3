@@ -26,12 +26,23 @@ Las metricas de RabbitMQ **por cola** se activan con
 `docker-compose.yml` como en `k8s/infra/rabbitmq.yaml`. Sin eso solo hay agregados
 globales y la alerta no puede distinguir `tasks.tp3-worker` de `tasks.parked`.
 
+## GKE
+El job `observability` de [deploy.yml](../../.github/workflows/deploy.yml) instala el stack en
+cada deploy. La contraseña de Grafana se genera la primera vez en el Secret `grafana-admin` y no
+pasa por el repo:
+```bash
+kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d; echo
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   # usuario admin
+```
+Para que Prometheus descubra las VMs workers, su KSA usa el SA `tp3-gke-nodes` (con
+`compute.viewer`) por Workload Identity. Ese binding está en
+[bootstrap/main.tf](../infra/terraform/bootstrap/main.tf) y requiere un `terraform apply` del bootstrap.
+
 ## Pendientes (D)
 Paso a paso en [docs/runbook-d.md](../docs/runbook-d.md).
-- [ ] Correr la matriz y capturar el dashboard en vivo durante una corrida de k6.
-- [ ] Disparar `ColaDeTareasAlta` (apagar los workers y mandar carga) y capturarla.
-- [ ] Probar el stack en GKE (depende de C) y conseguir ahi las capturas de CPU y
-      memoria por pod y por nodo: en docker-compose esos paneles quedan vacios
-      porque salen de cAdvisor y node-exporter, que solo existen en Kubernetes.
-- [ ] Reemplazar `PROJECT` en [kube-prometheus-stack-values.yaml](../observability/kube-prometheus-stack-values.yaml)
-      y darle `roles/compute.viewer` al SA de nodos para el scrape de las VMs (coordinar con C).
+- [x] Correr la matriz y capturar el dashboard en vivo durante una corrida de k6 ([evidencia/hit4](../evidencia/hit4/)).
+- [x] Disparar `ColaDeTareasAlta` (apagar los workers y mandar carga) y capturarla ([alertas_transicion.log](../evidencia/hit4/alertas_transicion.log)).
+- [ ] Capturas de CPU y memoria por pod y por nodo en GKE: en docker-compose esos paneles
+      quedan vacíos porque salen de cAdvisor y node-exporter, que solo existen en Kubernetes.
+- [x] `PROJECT` se reemplaza en el deploy y el SA de nodos ya tiene `roles/compute.viewer`.
+      Falta aplicar el binding de Workload Identity del bootstrap (C).
