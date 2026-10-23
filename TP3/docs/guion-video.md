@@ -8,15 +8,27 @@ Comandos desde Git Bash en la raíz del repo. Todo está probado en docker compo
 disponible, el bloque 6 lo suma.
 
 ## 0. Preparación (antes de grabar, no sale en el video)
+Con 3 réplicas del backend (`docker-compose.r4.yml`) **no se publica el puerto 8000**: todo
+entra por el proxy del frontend en `localhost:8081/api`.
 ```bash
 cp -n .env.example .env                    # si no existe
 docker compose -f docker-compose.yml -f docker-compose.r4.yml --profile obs up -d --build --scale worker=3
-curl -s localhost:8000/health              # {"backend":"ok","redis":"ok","rabbitmq":"ok"}
-export USER_TOKEN=$(docker compose exec -T backend python /dev/stdin alice user < TP3/scripts/gen_token.py)
-export ADMIN_TOKEN=$(docker compose exec -T backend python /dev/stdin admin admin < TP3/scripts/gen_token.py)
+curl -s localhost:8081/api/health          # {"backend":"ok","redis":"ok","rabbitmq":"ok"}
+tok() { docker compose exec -T backend python /dev/stdin "$1" "$2" < TP3/scripts/gen_token.py | tr -d '\r'; }
+export USER_TOKEN=$(tok alice user) ADMIN_TOKEN=$(tok admin admin) USER_A_TOKEN=$(tok alice user) USER_B_TOKEN=$(tok bob user)
 ```
-Abrir pestañas: UI http://localhost:8081, Swagger http://localhost:8000/docs,
-RabbitMQ http://localhost:15672, Grafana http://localhost:3000 (dashboard "TP3").
+Abrir pestañas: UI http://localhost:8081, Swagger http://localhost:8081/api/docs,
+RabbitMQ http://localhost:15672 (usuario y contraseña del `.env`) y Grafana http://localhost:3000
+(`admin`/`admin`, dashboard "TP3 - Sobel distribuido").
+
+**Entre el ensayo y la demo, vaciar Redis.** Los resultados viven 24 h en memoria y Docker tiene
+8 GB. El 23/10, Redis murió por OOM después de muchas corridas, y el backend quedó `unhealthy`.
+```bash
+docker compose exec -T redis redis-cli FLUSHALL
+```
+Si algo quedó colgado, lo más rápido es reiniciar todo de cero: `docker compose -f docker-compose.yml
+-f docker-compose.r4.yml --profile obs down` y repetir el `up`. RabbitMQ y Redis no tienen
+volúmenes, así que arrancan vacíos.
 
 ## 1. Arquitectura (2 min) — A
 - Mostrar el diagrama de [arquitectura.md](arquitectura.md): backend → `split.requests` → split →
@@ -31,15 +43,20 @@ RabbitMQ http://localhost:15672, Grafana http://localhost:3000 (dashboard "TP3")
 
 ## 3. R2: validación antes de encolar (1 min) — B
 ```bash
-curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $USER_TOKEN" \
-  -F files=@TP3/loadtest/sample.png -F ops=sobel,rotate localhost:8000/jobs        # 400
-curl -s -H "Authorization: Bearer $USER_TOKEN" -F files=@README.md -F ops=sobel localhost:8000/jobs   # 400, archivo no es imagen
+curl -s -w " %{http_code}\n" -H "Authorization: Bearer $USER_TOKEN" \
+  -F files=@TP3/loadtest/sample.png -F ops=sobel,rotate localhost:8081/api/jobs   # 400 unsupported_op
+curl -s -w " %{http_code}\n" -H "Authorization: Bearer $USER_TOKEN" \
+  -F files=@README.md -F ops=sobel localhost:8081/api/jobs                       # 400 invalid_image
 ```
 Mostrar en la UI de RabbitMQ que `split.requests` no recibió nada (contador de publicados quieto).
 
 ## 4. R4: roles, aislamiento y 3 réplicas (1,5 min) — B
 ```bash
-bash TP3/scripts/r4_evidence.sh
+BASE_URL=http://localhost:8081/api bash TP3/scripts/r4_evidence.sh
+# Sin Python en la máquina, se corre el mismo script con la imagen del backend:
+MSYS_NO_PATHCONV=1 docker run --rm --network sdypp_tp3_default -v "$(pwd)/TP3:/TP3:ro" \
+  --entrypoint python -e BASE_URL=http://frontend:8080/api -e ADMIN_TOKEN -e USER_A_TOKEN -e USER_B_TOKEN \
+  tp3/backend:dev /TP3/scripts/r4_evidence.py                                    # 13 OK, 0 FAIL
 ```
 Señalar en la salida: 401 sin token, 403 de usuario en `/stats`, 404 al pedir un job ajeno,
 200 del admin, y los tres hostnames distintos en `X-Backend-Replica`.
@@ -48,14 +65,19 @@ En la UI: el panel admin con el token de usuario (rechazado) y con el de admin (
 ## 5. R5 con Grafana en vivo (3 min) — D
 Con Grafana a la vista, largar una celda de la matriz:
 ```bash
-cd TP3/loadtest
-MSYS_NO_PATHCONV=1 docker run --rm -v "$(pwd):/lt" -w /lt/k6 grafana/k6:0.54.0 run \
-  -e BASE_URL=http://host.docker.internal:8000 -e ADMIN_TOKEN="$ADMIN_TOKEN" \
-  -e IMAGE=../images/1MB.png -e VA=10 -e OPS=blur,sobel -e VC=10 -e DURATION=60s k6/job.js
+MSYS_NO_PATHCONV=1 docker run --rm --network sdypp_tp3_default -v "$(pwd)/TP3/loadtest:/lt" -w /lt/k6 \
+  grafana/k6:0.54.0 run -e BASE_URL=http://frontend:8080/api -e ADMIN_TOKEN="$ADMIN_TOKEN" \
+  -e IMAGE=../images/100KB.png -e VA=10 -e OPS=blur,sobel -e VC=10 -e DURATION=60s job.js
 ```
+Ensayado el 23/10 con 30 s: 133 jobs, 0 errores, p95 4,3 s, SLO cumplido. **No subir a imágenes
+de 10 MB ni a VC=50 en vivo**: en esta máquina eso termina en OOM (sección 8.5 del informe).
 - Mientras corre: throughput, mensajes publicados contra consumidos, profundidad de cola y p95.
-- A mitad de la corrida, **matar un worker** (`docker kill sdypp_tp3-worker-1`) y mostrar en los
-  logs de los otros el fragmento `reentregado` (caso c de la sección 8.4 del informe).
+- A mitad de la corrida, **matar un worker** (`docker kill sdypp_tp3-worker-1`). Los jobs siguen
+  terminando con los otros dos. Ojo: con fragmentos de ~25 ms, lo más probable es que en ese
+  instante no tenga nada sin ack y no aparezca ningún `reentregado`. Para mostrar la reentrega,
+  enseñar la evidencia del caso c ([caso_c_worker_muerto.txt](../evidencia/r5/caso_c_worker_muerto.txt)),
+  donde se mató justo al worker que tenía un fragmento sin ack. Después:
+  `docker start sdypp_tp3-worker-1`.
 - Al final: el resumen de k6 (p50/p95/p99, errores, SLO) y la tabla de la matriz en el informe
   (sección 8.2) con la conclusión de qué variable domina.
 - Alerta: mostrar `ColaDeTareasAlta` en Prometheus → Alerts (o la captura de
