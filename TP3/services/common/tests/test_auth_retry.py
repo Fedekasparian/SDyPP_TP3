@@ -25,6 +25,23 @@ def test_expired_token_rejected():
         auth.verify_token(token, secret=SECRET)
 
 
+@pytest.mark.parametrize("token", ["bad", "bad.é", ".", "bad.signature"])
+def test_malformed_token_is_auth_error(token):
+    with pytest.raises(auth.AuthError):
+        auth.verify_token(token, secret=SECRET)
+
+
+@pytest.mark.parametrize("claims", [[], {"role": "user", "exp": 9999999999},
+                                  {"sub": "alice", "role": "user", "exp": "tomorrow"}])
+def test_signed_malformed_claims_are_rejected(claims):
+    import json
+
+    payload = auth._b64(json.dumps(claims).encode())
+    token = f"{payload}.{auth._sign(payload, SECRET)}"
+    with pytest.raises(auth.AuthError):
+        auth.verify_token(token, secret=SECRET)
+
+
 def test_backoff_sequence_capped_at_30():
     gen = backoff_delays(30)
     assert [next(gen) for _ in range(7)] == [1, 2, 4, 8, 16, 30, 30]

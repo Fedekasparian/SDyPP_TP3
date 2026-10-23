@@ -36,6 +36,12 @@ services:
     build: { context: TP3/services, dockerfile: backend/Dockerfile }
     image: tp3/backend:dev
     ports: ["8000:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=8)"]
+      interval: 10s
+      timeout: 10s
+      start_period: 10s
+      retries: 12
 
   split:
     <<: *app
@@ -63,7 +69,10 @@ services:
     build: { context: TP3/services, dockerfile: frontend/Dockerfile }
     image: tp3/frontend:dev
     ports: ["8081:8080"]
-    depends_on: [backend]
+    depends_on:
+      backend:
+        condition: service_healthy
+        restart: true  # refresca DNS de nginx cuando Compose recrea los backends
 
   prometheus:
     profiles: [obs]

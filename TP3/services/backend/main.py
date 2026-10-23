@@ -1,15 +1,22 @@
 """Backend HTTP (FastAPI). Stateless (R4): identidad en cada request (Bearer
 token HMAC), estado en Redis, trabajo en RabbitMQ. Ver docs/contrato.md (R3)."""
 import json
+import socket
 import threading
 import time
 import uuid
 
-from fastapi import Depends, FastAPI, File, Form, Header, Request, Response, UploadFile
-from fastapi.responses import JSONResponse
+import pika
+import redis
+
+from fastapi import Depends, FastAPI, File, Form, Header, Query, Request, Response, UploadFile
+from fastapi.exceptions import RequestValidationError
+from starlette.concurrency import run_in_threadpool
+from fastapi.responses import JSONResponse, StreamingResponse
 from prometheus_client import make_asgi_app
 
 from tp3common import auth, config, rabbit, store
+from tp3common.retry import retry_with_backoff
 from tp3common.logging_setup import recent_logs, setup_logging
 from tp3common.metrics import HTTP_DURATION
 
@@ -20,6 +27,8 @@ log = setup_logging(SERVICE)
 app = FastAPI(title="TP3 Sobel API", version="1.0.0")
 app.mount("/metrics", make_asgi_app())
 r = store.connect()
+REPLICA_ID = socket.gethostname()
+SSE_DURATION_S = 55
 
 
 class ApiError(Exception):
@@ -37,6 +46,18 @@ async def _validation_error(_: Request, exc: ValidationError):
     return JSONResponse({"error": exc.code, "detail": exc.detail}, status_code=exc.status)
 
 
+@app.exception_handler(RequestValidationError)
+async def _request_error(_: Request, exc: RequestValidationError):
+    return JSONResponse({"error": "invalid_request", "detail": "Faltan campos o tienen un formato invalido"},
+                        status_code=400)
+
+
+@app.exception_handler(redis.RedisError)
+async def _redis_error(_: Request, exc: redis.RedisError):
+    log.error("Redis no disponible: %s", type(exc).__name__)
+    return JSONResponse({"error": "store_unavailable", "detail": "Redis no disponible"}, status_code=503)
+
+
 @app.exception_handler(Exception)
 async def _unexpected_error(_: Request, exc: Exception):
     log.exception("error inesperado")
@@ -47,6 +68,7 @@ async def _unexpected_error(_: Request, exc: Exception):
 async def _metrics_mw(request: Request, call_next):
     start = time.perf_counter()
     response = await call_next(request)
+    response.headers["X-Backend-Replica"] = REPLICA_ID
     route = request.scope.get("route")
     path = getattr(route, "path", "unmatched")
     HTTP_DURATION.labels(request.method, path, response.status_code).observe(time.perf_counter() - start)
@@ -58,19 +80,33 @@ _local = threading.local()
 
 
 def publish(exchange: str, routing_key: str, body: dict) -> None:
-    for attempt in (1, 2):
+    def send():
         try:
             ch = getattr(_local, "ch", None)
             if ch is None or ch.is_closed:
-                _local.conn = rabbit.connect(max_attempts=2)
+                _local.conn = rabbit.connect(max_attempts=1)
                 _local.ch = _local.conn.channel()
                 rabbit.declare_topology(_local.ch)
-            rabbit.publish_json(_local.ch, exchange, routing_key, body)
-            return
-        except Exception as exc:  # noqa: BLE001
+                _local.ch.confirm_delivery()
+            _local.ch.basic_publish(
+                exchange=exchange, routing_key=routing_key, body=json.dumps(body).encode(),
+                properties=pika.BasicProperties(content_type="application/json", delivery_mode=2),
+                mandatory=True,
+            )
+        except pika.exceptions.AMQPError:
             _local.ch = None
-            if attempt == 2:
-                raise ApiError(503, "broker_unavailable", f"RabbitMQ no disponible: {exc}") from exc
+            conn = getattr(_local, "conn", None)
+            if conn is not None and conn.is_open:
+                try:
+                    conn.close()
+                except pika.exceptions.AMQPError:
+                    pass
+            raise
+    try:
+        retry_with_backoff(send, "publish", max_attempts=5,
+                           exceptions=(pika.exceptions.AMQPError, OSError))
+    except (pika.exceptions.AMQPError, OSError) as exc:
+        raise ApiError(503, "broker_unavailable", "RabbitMQ no disponible; no se confirmo el envio") from exc
 
 
 # ---------- Auth (R4) ----------
@@ -147,12 +183,54 @@ def _job_view(job_id: str, job: dict) -> dict:
 @app.get("/health")
 def health():
     status = {SERVICE: "ok"}
+    # Probes rapidos: no aplicar los reintentos de las operaciones de negocio.
     try:
-        r.ping()
+        with redis.Redis.from_url(config.REDIS_URL, socket_connect_timeout=2, socket_timeout=2) as probe:
+            probe.ping()
         status["redis"] = "ok"
-    except Exception:  # noqa: BLE001
+    except redis.RedisError:
         status["redis"] = "down"
+    conn = None
+    try:
+        conn = rabbit.connect(max_attempts=1)
+        status["rabbitmq"] = "ok"
+    except (pika.exceptions.AMQPError, OSError):
+        status["rabbitmq"] = "down"
+    finally:
+        if conn is not None and conn.is_open:
+            conn.close()
     return JSONResponse(status, status_code=200 if all(v == "ok" for v in status.values()) else 503)
+
+
+def _enqueue_job(payload, chain, image, op_params, user):
+    validate_files(payload)
+    job_id = uuid.uuid4().hex
+    submitted = time.time()
+
+    def save():
+        # Reconstruir el pipeline en cada intento: execute() vacia su buffer.
+        pipe = r.pipeline()
+        for i, (_, data) in enumerate(payload):
+            pipe.set(store.input_key(job_id, i), data, ex=store.JOB_TTL_S)
+        pipe.hset(store.job_key(job_id), mapping={
+            "owner": user["sub"], "ops": json.dumps(chain), "params": json.dumps(op_params),
+            "worker_image": image, "n_files": len(payload), "retries": 0,
+            "t_submit": submitted, "status": "queued",
+        })
+        pipe.expire(store.job_key(job_id), store.JOB_TTL_S)
+        for index in ("jobs:all", f"jobs:user:{user['sub']}", "jobs:status:queued"):
+            pipe.sadd(index, job_id)
+            pipe.expire(index, store.JOB_TTL_S)
+        pipe.execute()
+
+    store.retry_operation(save)
+    try:
+        publish("", rabbit.Q_SPLIT, {"job_id": job_id})
+    except ApiError:
+        store.set_status(r, job_id, "failed", error="No se pudo confirmar el envio a RabbitMQ")
+        raise
+    log.info("job=%s user=%s ops=%s files=%d encolado", job_id, user["sub"], chain, len(payload))
+    return {"job_id": job_id, "status": "queued", "status_url": f"/jobs/{job_id}"}
 
 
 @app.post("/jobs", status_code=202)
@@ -167,36 +245,77 @@ async def submit_job(
     chain = parse_ops(ops)
     image = parse_worker_image(worker_image)
     op_params = parse_params(params)
-    payload = [(f.filename or f"file{i}", await f.read()) for i, f in enumerate(files)]
-    validate_files(payload)
-
-    job_id = uuid.uuid4().hex
-    pipe = r.pipeline()
-    for i, (_, data) in enumerate(payload):
-        pipe.set(store.input_key(job_id, i), data, ex=store.JOB_TTL_S)
-    pipe.hset(store.job_key(job_id), mapping={
-        "owner": user["sub"], "ops": json.dumps(chain), "params": json.dumps(op_params),
-        "worker_image": image, "n_files": len(payload), "retries": 0, "t_submit": time.time(),
-    })
-    pipe.expire(store.job_key(job_id), store.JOB_TTL_S)
-    pipe.sadd("jobs:all", job_id)
-    pipe.sadd(f"jobs:user:{user['sub']}", job_id)
-    pipe.execute()
-    store.set_status(r, job_id, "queued")
-    publish("", rabbit.Q_SPLIT, {"job_id": job_id})
-    log.info("job=%s user=%s ops=%s files=%d encolado", job_id, user["sub"], chain, len(payload))
-    return {"job_id": job_id, "status": "queued", "status_url": f"/jobs/{job_id}"}
+    if len(files) > config.MAX_FILES:
+        raise ValidationError(400, "too_many_files", f"Maximo {config.MAX_FILES} archivos")
+    payload = []
+    for i, f in enumerate(files):
+        data = await f.read(int(config.MAX_FILE_MB * 1024 * 1024) + 1)
+        if len(data) > config.MAX_FILE_MB * 1024 * 1024:
+            raise ValidationError(413, "file_too_large", f"'{f.filename}' supera {config.MAX_FILE_MB} MB")
+        payload.append((f.filename or f"file{i}", data))
+    # PIL, Redis y pika son bloqueantes; nunca ocupar el event loop de ASGI.
+    return await run_in_threadpool(_enqueue_job, payload, chain, image, op_params, user)
 
 
 @app.get("/jobs")
 def list_jobs(user: dict = Depends(current_user)):
     key = "jobs:all" if user["role"] == "admin" else f"jobs:user:{user['sub']}"
-    return {"jobs": sorted(j.decode() for j in r.smembers(key))}
+    return {"jobs": store.active_job_ids(r, key)}
 
 
 @app.get("/jobs/{job_id}")
 def get_job(job_id: str, user: dict = Depends(current_user)):
     return _job_view(job_id, _load_job(job_id, user))
+
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+async def _job_events(request: Request, job_id: str, user: dict, initial: dict):
+    snapshot, previous = initial, None
+    cursor = "0-0"
+    deadline = time.monotonic() + SSE_DURATION_S
+    try:
+        while not await request.is_disconnected():
+            if user["exp"] <= time.time():
+                yield _sse("error", {"error": "unauthorized", "detail": "Token expirado"})
+                return
+            if snapshot != previous:
+                yield _sse("progress", snapshot)
+                previous = snapshot
+            if snapshot["status"] in ("done", "failed", "dlq"):
+                return
+            if time.monotonic() >= deadline:
+                yield _sse("reconnect", {"detail": "Reconectar para continuar"})
+                return
+            # XREAD bloquea como maximo un segundo, fuera del event loop.
+            entries = await run_in_threadpool(
+                lambda: r.xread({store.event_key(job_id): cursor}, count=50, block=1000)
+            )
+            if user["exp"] <= time.time():
+                yield _sse("error", {"error": "unauthorized", "detail": "Token expirado"})
+                return
+            for _, messages in entries:
+                for event_id, fields in messages:
+                    cursor = event_id.decode()
+                    yield _sse("result", json.loads(fields[b"data"]))
+            # Joiner y monitor consumen copias independientes: volver a leer el
+            # estado evita perder el 'done' si el monitor recibio el fanout antes.
+            snapshot = await run_in_threadpool(get_job, job_id, user)
+            yield ": keep-alive\n\n"
+    except redis.RedisError:
+        yield _sse("error", {"error": "store_unavailable", "detail": "Redis no disponible"})
+    except ApiError as exc:
+        yield _sse("error", {"error": exc.code, "detail": exc.detail})
+
+
+@app.get("/jobs/{job_id}/events", response_class=StreamingResponse)
+async def job_events(request: Request, job_id: str, user: dict = Depends(current_user)):
+    # Autorizar antes de enviar headers SSE: un tercero obtiene 404, no un stream.
+    initial = await run_in_threadpool(get_job, job_id, user)
+    return StreamingResponse(_job_events(request, job_id, user, initial), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
 @app.get("/jobs/{job_id}/result/{file_idx}")
@@ -212,13 +331,14 @@ def get_result(job_id: str, file_idx: int, user: dict = Depends(current_user)):
 
 @app.get("/stats")
 def stats(_: dict = Depends(require_admin)):
-    by_status = {s: r.scard(f"jobs:status:{s}") for s in store.STATUSES}
+    by_status = {s: len(store.active_job_ids(r, f"jobs:status:{s}")) for s in store.STATUSES}
     lat = sorted(float(x) for x in r.lrange("stats:latencies", 0, -1))
 
     def pct(p: float):
         return round(lat[min(len(lat) - 1, int(p * len(lat)))], 4) if lat else None
 
     queues = {}
+    conn = None
     try:
         conn = rabbit.connect(max_attempts=1)
         ch = conn.channel()
@@ -226,9 +346,11 @@ def stats(_: dict = Depends(require_admin)):
             rabbit.task_queue(p) for p in config.ALLOWED_WORKER_IMAGES
         ]:
             queues[q] = rabbit.queue_depth(ch, q)
-        conn.close()
-    except Exception as exc:  # noqa: BLE001
-        queues = {"error": str(exc)}
+    except (pika.exceptions.AMQPError, OSError):
+        queues = {"error": "RabbitMQ no disponible"}
+    finally:
+        if conn is not None and conn.is_open:
+            conn.close()
     finished = by_status["done"] + by_status["failed"] + by_status["dlq"]
     return {
         "jobs_by_status": by_status,
@@ -240,24 +362,42 @@ def stats(_: dict = Depends(require_admin)):
 
 
 @app.post("/admin/dlq/reprocess")
-def reprocess_dlq(max_messages: int = 1000, _: dict = Depends(require_admin)):
-    """Mueve los fragmentos estacionados (tasks.parked) de vuelta a la cola de trabajo."""
-    conn = rabbit.connect(max_attempts=2)
-    ch = conn.channel()
+def reprocess_dlq(max_messages: int = Query(default=1000, ge=1, le=1000),
+                  _: dict = Depends(require_admin)):
+    """Ack solo tras persistir el estado y confirmar la republicacion."""
+    conn = None
     moved, jobs = 0, set()
-    while moved < max_messages:
-        method, _, body = ch.basic_get(rabbit.Q_PARKED)
-        if method is None:
-            break
-        task = json.loads(body)
-        task.update(attempt=0, enqueued_at=time.time())
-        rabbit.publish_json(ch, rabbit.EX_TASKS, task["worker_image"], task)
-        ch.basic_ack(method.delivery_tag)
-        jobs.add(task["job_id"])
-        moved += 1
-    for job_id in jobs:
-        store.set_status(r, job_id, "processing", error="")
-    conn.close()
+    try:
+        conn = rabbit.connect(max_attempts=5)
+        ch = conn.channel()
+        rabbit.declare_topology(ch)
+        while moved < max_messages:
+            method, _, body = ch.basic_get(rabbit.Q_PARKED, auto_ack=False)
+            if method is None:
+                break
+            try:
+                task = json.loads(body)
+                job_id, pool = task["job_id"], task["worker_image"]
+            except (ValueError, KeyError, TypeError) as exc:
+                raise ApiError(500, "invalid_dlq_message", "Mensaje estacionado invalido; requiere revision") from exc
+            task.update(attempt=0, enqueued_at=time.time())
+            store.set_status(r, job_id, "processing", error="")
+            try:
+                publish(rabbit.EX_TASKS, pool, task)
+            except ApiError:
+                store.set_status(r, job_id, "dlq", error="No se pudo confirmar el reproceso")
+                raise
+            ch.basic_ack(method.delivery_tag)
+            jobs.add(job_id)
+            moved += 1
+    except (pika.exceptions.AMQPError, OSError) as exc:
+        raise ApiError(503, "broker_unavailable", "RabbitMQ no disponible durante el reproceso") from exc
+    finally:
+        if conn is not None and conn.is_open:
+            try:
+                conn.close()  # reentrega cualquier mensaje no confirmado
+            except pika.exceptions.AMQPError:
+                pass
     return {"reprocessed": moved, "jobs": sorted(jobs)}
 
 
