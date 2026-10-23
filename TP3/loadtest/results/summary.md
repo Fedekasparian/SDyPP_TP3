@@ -1,0 +1,110 @@
+| V1 | V3 | VA | VB | VC | estado | meseta | p50_s | p95_s | p99_s | jobs_ok | throughput_req_s | tasa_error | dlq | timeouts | invalidos_rechazados | slo_ok | cuello_de_botella |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 10KB | 2 | 1 | 1 | 1 | medida | 20s | 0.523 | 0.535 | 0.555 | 48 | 4.0 | 0 | 0 | 0 | 4 | si |  |
+| 10KB | 2 | 1 | 1 | 10 | medida | 20s | 0.527 | 0.598 | 1.101 | 464 | 32.29 | 0 | 0 | 0 | 20 | si |  |
+| 10KB | 2 | 1 | 1 | 50 | medida | 20s | 1.577 | 2.304 | 2.471 | 889 | 107.33 | 0 | 0 | 0 | 42 | si |  |
+| 10KB | 2 | 1 | 2 | 1 | medida | 20s | 0.524 | 0.539 | 0.541 | 48 | 3.93 | 0 | 0 | 0 | 2 | si |  |
+| 10KB | 2 | 1 | 2 | 10 | medida | 20s | 0.536 | 0.574 | 0.588 | 467 | 32.66 | 0 | 0 | 0 | 25 | si |  |
+| 10KB | 2 | 1 | 2 | 50 | medida | 20s | 1.679 | 2.92 | 3.129 | 718 | 100.54 | 0 | 0 | 0 | 46 | si |  |
+| 10KB | 2 | 1 | 3 | 1 | medida | 20s | 0.524 | 0.54 | 0.548 | 48 | 3.86 | 0 | 0 | 0 | 0 | si |  |
+| 10KB | 2 | 1 | 3 | 10 | medida | 20s | 0.531 | 0.611 | 1.172 | 455 | 32.24 | 0 | 0 | 0 | 29 | si |  |
+| 10KB | 2 | 1 | 3 | 50 | medida | 20s | 1.68 | 2.263 | 2.399 | 753 | 103.26 | 0 | 0 | 0 | 41 | si |  |
+| 10KB | 2 | 10 | 1 | 1 | medida | 20s | 0.643 | 0.816 | 1.026 | 37 | 3.22 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 2 | 10 | 1 | 10 | medida | 20s | 2.693 | 3.226 | 3.305 | 103 | 19.74 | 0 | 0 | 0 | 3 | si |  |
+| 10KB | 2 | 10 | 1 | 50 | medida | 20s | 10.865 | 12.12 | 12.358 | 150 | 78.18 | 0 | 0 | 0 | 5 | no |  |
+| 10KB | 2 | 10 | 2 | 1 | medida | 20s | 0.62 | 0.672 | 0.682 | 40 | 3.38 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 2 | 10 | 2 | 10 | medida | 20s | 2.691 | 3.255 | 3.289 | 100 | 20.42 | 0 | 0 | 0 | 8 | si |  |
+| 10KB | 2 | 10 | 2 | 50 | medida | 20s | 11.108 | 12.617 | 13.06 | 158 | 75.53 | 0 | 0 | 0 | 9 | no |  |
+| 10KB | 2 | 10 | 3 | 1 | medida | 20s | 0.627 | 0.711 | 0.771 | 39 | 3.28 | 0 | 0 | 0 | 0 | si |  |
+| 10KB | 2 | 10 | 3 | 10 | medida | 20s | 2.243 | 3.329 | 3.805 | 117 | 20.13 | 0 | 0 | 0 | 6 | si |  |
+| 10KB | 2 | 10 | 3 | 50 | medida | 20s | 11.008 | 13.708 | 13.95 | 142 | 77.24 | 0 | 0 | 0 | 7 | no |  |
+| 10KB | 2 | 50 | 1 | 1 | medida | 20s | 2.096 | 2.484 | 2.634 | 12 | 2.25 | 0 | 0 | 0 | 0 | si |  |
+| 10KB | 2 | 50 | 1 | 10 | medida | 20s | 12.312 | 14.996 | 16.114 | 25 | 14.74 | 0 | 0 | 0 | 1 | no |  |
+| 10KB | 2 | 50 | 1 | 50 | medida | 20s | 22.434 | 29.407 | 29.742 | 6 | 12.38 | 0.8824 | 0 | 45 | 5 | no |  |
+| 10KB | 2 | 50 | 2 | 1 | medida | 20s | 2.106 | 20.159 | 21.764 | 3 | 2.26 | 0 | 0 | 0 | 1 | no |  |
+| 10KB | 2 | 50 | 2 | 10 | medida | 20s | 12.244 | 14.621 | 14.97 | 27 | 15.85 | 0 | 0 | 0 | 1 | no |  |
+| 10KB | 2 | 50 | 2 | 50 | medida | 20s | 21.549 | 29.86 | 30.246 | 15 | 39.04 | 0.7541 | 0 | 46 | 4 | no |  |
+| 10KB | 2 | 50 | 3 | 1 | medida | 20s | 2.139 | 12.671 | 15.357 | 6 | 2.28 | 0 | 0 | 0 | 0 | no |  |
+| 10KB | 2 | 50 | 3 | 10 | medida | 20s | 10.944 | 12.383 | 12.724 | 30 | 15.13 | 0 | 0 | 0 | 0 | no |  |
+| 10KB | 2 | 50 | 3 | 50 | medida | 20s | 19.337 | 28.272 | 29.518 | 17 | 39.77 | 0.7302 | 0 | 46 | 4 | no |  |
+| 1MB | 2 | 1 | 1 | 1 | medida | 20s | 1.651 | 1.833 | 1.839 | 16 | 1.7 | 0 | 0 | 0 | 0 | si |  |
+| 1MB | 2 | 1 | 1 | 10 | medida | 20s | 4.46 | 5.398 | 5.681 | 61 | 5.01 | 0 | 0 | 0 | 3 | si |  |
+| 1MB | 2 | 1 | 1 | 50 | medida | 10s | 7.355 | 10.563 | 10.999 | 116 | 63.43 | 0 | 0 | 0 | 5 | no |  |
+| 1MB | 2 | 1 | 2 | 1 | medida | 20s | 1.629 | 2.075 | 2.151 | 15 | 1.69 | 0 | 0 | 0 | 0 | si |  |
+| 1MB | 2 | 1 | 2 | 10 | medida | 20s | 4.29 | 6.033 | 6.203 | 62 | 5.16 | 0 | 0 | 0 | 5 | si |  |
+| 1MB | 2 | 1 | 2 | 50 | medida | 10s | 11.999 | 15.353 | 15.954 | 91 | 36.3 | 0 | 0 | 0 | 6 | no |  |
+| 1MB | 2 | 1 | 3 | 1 | medida | 20s | 1.689 | 1.894 | 1.937 | 15 | 1.74 | 0 | 0 | 0 | 2 | si |  |
+| 1MB | 2 | 1 | 3 | 10 | medida | 20s | 6.015 | 7.183 | 7.582 | 48 | 4.13 | 0 | 0 | 0 | 1 | si |  |
+| 1MB | 2 | 1 | 3 | 50 | medida | 10s | 8.054 | 10.403 | 10.788 | 134 | 71.03 | 0 | 0 | 0 | 7 | no |  |
+| 1MB | 2 | 10 | 1 | 1 | medida | 20s | 16.546 | 17.7 | 17.802 | 2 | 0.84 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 2 | 10 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 2 | 1 | medida | 20s | 20.407 | 22.565 | 22.757 | 2 | 0.76 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 2 | 10 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 3 | 1 | medida | 20s | 14.347 | 14.598 | 14.62 | 2 | 0.89 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 2 | 10 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 2 | 1 | medida | 20s | 0.0 | 0.0 | 0.0 | 0 | 0.18 | 0 | 0 | 0 | 0 | si |  |
+| 1MB | 2 | 50 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 10KB | 6 | 1 | 1 | 1 | medida | 20s | 0.523 | 0.537 | 0.543 | 48 | 4.03 | 0 | 0 | 0 | 5 | si |  |
+| 10KB | 6 | 1 | 1 | 10 | medida | 20s | 0.524 | 0.551 | 0.574 | 477 | 33.32 | 0 | 0 | 0 | 24 | si |  |
+| 10KB | 6 | 1 | 1 | 50 | medida | 20s | 1.178 | 1.809 | 2.128 | 1097 | 106.71 | 0 | 0 | 0 | 58 | si |  |
+| 10KB | 6 | 1 | 2 | 1 | medida | 20s | 0.523 | 0.532 | 0.547 | 48 | 3.91 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 6 | 1 | 2 | 10 | medida | 20s | 0.54 | 0.64 | 1.165 | 448 | 31.67 | 0 | 0 | 0 | 21 | si |  |
+| 10KB | 6 | 1 | 2 | 50 | medida | 20s | 1.303 | 2.004 | 2.414 | 924 | 100.33 | 0 | 0 | 0 | 52 | si |  |
+| 10KB | 6 | 1 | 3 | 1 | medida | 20s | 0.525 | 1.087 | 2.103 | 41 | 3.57 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 6 | 1 | 3 | 10 | medida | 20s | 0.537 | 0.605 | 0.635 | 460 | 32.02 | 0 | 0 | 0 | 23 | si |  |
+| 10KB | 6 | 1 | 3 | 50 | medida | 20s | 1.3 | 1.983 | 2.325 | 930 | 102.24 | 0 | 0 | 0 | 49 | si |  |
+| 10KB | 6 | 10 | 1 | 1 | medida | 20s | 0.649 | 0.75 | 1.078 | 37 | 3.24 | 0 | 0 | 0 | 2 | si |  |
+| 10KB | 6 | 10 | 1 | 10 | medida | 20s | 2.09 | 2.583 | 2.852 | 129 | 19.29 | 0 | 0 | 0 | 8 | si |  |
+| 10KB | 6 | 10 | 1 | 50 | medida | 20s | 10.288 | 29.625 | 30.131 | 58 | 44.58 | 0.3556 | 0 | 32 | 4 | no |  |
+| 10KB | 6 | 10 | 2 | 1 | medida | 20s | 0.648 | 0.755 | 0.785 | 38 | 3.24 | 0 | 0 | 0 | 2 | si |  |
+| 10KB | 6 | 10 | 2 | 10 | medida | 20s | 2.273 | 2.849 | 2.923 | 123 | 18.92 | 0 | 0 | 0 | 4 | si |  |
+| 10KB | 6 | 10 | 2 | 50 | medida | 20s | 12.171 | 16.111 | 16.913 | 131 | 67.01 | 0 | 0 | 0 | 6 | no |  |
+| 10KB | 6 | 10 | 3 | 1 | medida | 20s | 0.666 | 0.769 | 0.873 | 37 | 3.15 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 6 | 10 | 3 | 10 | medida | 20s | 1.796 | 2.852 | 2.985 | 140 | 19.52 | 0 | 0 | 0 | 7 | si |  |
+| 10KB | 6 | 10 | 3 | 50 | medida | 20s | 11.779 | 17.61 | 18.013 | 129 | 64.38 | 0 | 0 | 0 | 11 | no |  |
+| 10KB | 6 | 50 | 1 | 1 | medida | 20s | 2.208 | 2.857 | 2.914 | 11 | 2.17 | 0 | 0 | 0 | 1 | si |  |
+| 10KB | 6 | 50 | 1 | 10 | medida | 20s | 9.586 | 11.712 | 12.411 | 32 | 15.22 | 0 | 0 | 0 | 0 | no |  |
+| 10KB | 6 | 50 | 1 | 50 | medida | 20s | 27.173 | 28.902 | 29.096 | 5 | 12.45 | 0.9038 | 0 | 47 | 0 | no |  |
+| 10KB | 6 | 50 | 2 | 1 | medida | 20s | 2.287 | 8.913 | 10.764 | 7 | 2.19 | 0 | 0 | 0 | 0 | si |  |
+| 10KB | 6 | 50 | 2 | 10 | medida | 20s | 10.611 | 13.014 | 13.377 | 28 | 13.69 | 0 | 0 | 0 | 3 | no |  |
+| 10KB | 6 | 50 | 2 | 50 | medida | 20s | 20.541 | 27.74 | 28.478 | 6 | 15.2 | 0.8868 | 0 | 47 | 5 | no |  |
+| 10KB | 6 | 50 | 3 | 1 | medida | 20s | 1.641 | 10.18 | 13.652 | 8 | 2.26 | 0 | 0 | 0 | 0 | no |  |
+| 10KB | 6 | 50 | 3 | 10 | medida | 20s | 12.207 | 17.584 | 19.051 | 24 | 13.51 | 0 | 0 | 0 | 0 | no |  |
+| 10KB | 6 | 50 | 3 | 50 | medida | 20s | 20.619 | 28.567 | 29.811 | 11 | 23.49 | 0.8136 | 0 | 48 | 2 | no |  |
+| 1MB | 6 | 1 | 1 | 1 | medida | 20s | 1.679 | 2.093 | 2.099 | 15 | 1.65 | 0 | 0 | 0 | 0 | si |  |
+| 1MB | 6 | 1 | 1 | 10 | medida | 20s | 5.3 | 7.658 | 8.1 | 50 | 4.36 | 0 | 0 | 0 | 5 | si |  |
+| 1MB | 6 | 1 | 1 | 50 | medida | 20s | 5.365 | 6.638 | 6.746 | 283 | 83.49 | 0 | 0 | 0 | 19 | si |  |
+| 1MB | 6 | 1 | 2 | 1 | medida | 20s | 1.773 | 2.628 | 3.553 | 14 | 1.58 | 0 | 0 | 0 | 1 | si |  |
+| 1MB | 6 | 1 | 2 | 10 | medida | 20s | 5.396 | 7.603 | 7.963 | 50 | 4.44 | 0 | 0 | 0 | 2 | si |  |
+| 1MB | 6 | 1 | 2 | 50 | medida | 20s | 4.769 | 6.631 | 6.825 | 305 | 85.85 | 0 | 0 | 0 | 15 | si |  |
+| 1MB | 6 | 1 | 3 | 1 | medida | 20s | 1.817 | 2.118 | 2.202 | 14 | 1.71 | 0 | 0 | 0 | 4 | si |  |
+| 1MB | 6 | 1 | 3 | 10 | medida | 20s | 6.384 | 9.281 | 9.766 | 42 | 3.74 | 0 | 0 | 0 | 4 | si |  |
+| 1MB | 6 | 1 | 3 | 50 | medida | 20s | 6.91 | 8.633 | 9.044 | 228 | 73.55 | 0 | 0 | 0 | 13 | si |  |
+| 1MB | 6 | 10 | 1 | 1 | medida | 20s | 14.742 | 16.032 | 16.146 | 2 | 0.87 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 6 | 10 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 2 | 1 | medida | 20s | 15.71 | 17.587 | 17.753 | 2 | 0.8 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 6 | 10 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 3 | 1 | medida | 20s | 13.716 | 14.064 | 14.095 | 2 | 0.92 | 0 | 0 | 0 | 0 | no |  |
+| 1MB | 6 | 10 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |

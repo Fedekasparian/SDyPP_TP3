@@ -21,4 +21,4 @@
 ## Pendientes
 - [ ] (C) `terraform apply` del cluster y carga de las GitHub Variables (ver [infra/README.md](../infra/README.md)).
 - [ ] (C) Deseable: autoescalado de workers según la profundidad de `tasks.tp3-worker`.
-- [ ] (D) Tabla V1 × V2 × V3 con `MATRIX=hit3 ./run_matrix.sh`.
+- [x] (D) Tabla V1 × V2 × V3 con `MATRIX=hit3 ./run_matrix.sh`: 54 celdas medidas y 66 declaradas con motivo, en [loadtest/results/summary_hit3.md](../loadtest/results/summary_hit3.md). Análisis en la sección 8.6 del [informe](../docs/informe.md). Las 66 declaradas son retomables: relanzar el mismo comando completa lo que falta.

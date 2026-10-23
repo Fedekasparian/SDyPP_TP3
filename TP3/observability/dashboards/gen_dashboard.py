@@ -44,7 +44,13 @@ PANELS = [
     ("Throughput (tareas/s por servicio)", "short", [
         {"expr": "sum by (service) (rate(tasks_processed_total[1m]))", "legendFormat": "{{service}}"}]),
     ("Tasa de errores", "percentunit", [
-        {"expr": "sum(rate(task_errors_total[1m])) / clamp_min(sum(rate(tasks_processed_total[1m])), 0.001)",
+        # El denominador son los INTENTOS (procesados + fallados), no solo los
+        # exitosos. Con `errores / procesados` la razon no esta acotada: si hay
+        # errores y nada se procesa, el clamp de 0.001/s la manda a miles por
+        # ciento y el eje del panel queda en 10000%, que para una "tasa de
+        # errores" es absurdo. Con los intentos en el denominador queda en [0,1].
+        {"expr": "sum(rate(task_errors_total[1m])) / clamp_min("
+                 "sum(rate(tasks_processed_total[1m])) + sum(rate(task_errors_total[1m])), 0.001)",
          "legendFormat": "tareas"},
         {"expr": 'sum(rate(http_request_duration_seconds_count{status=~"5.."}[1m])) '
                  "/ clamp_min(sum(rate(http_request_duration_seconds_count[1m])), 0.001)",

@@ -19,7 +19,7 @@ BASE_URL=http://<ip>/api MATRIX=hit3 MODE=manual ./TP3/loadtest/run_matrix.sh   
 Sin k6 instalado, se puede usar Docker:
 `docker run --rm -v "$PWD/TP3/loadtest:/lt" -w /lt/k6 grafana/k6:0.54.0 run -e BASE_URL=http://host.docker.internal:8000 ... job.js`
 
-La salida queda en `results/*.json` (una celda por archivo, lo que permite cortar y retomar) y en `results/summary.{csv,md}`.
+La salida queda en `results/*.json` (una celda por archivo, lo que permite cortar y retomar) y en `results/summary.{csv,md}` para R5 o `results/summary_hit3.{csv,md}` para el Hit #3. Las dos matrices escriben archivos distintos a propósito: comparten claves de celda, así que con una sola salida correr una pisaba la tabla de la otra.
 
 ## Tamaño de la matriz R5
 VA(3) × VB(3) × VC(3) × V1(2) × V3(2) = **108 celdas**, de 75 s cada una: unas **2,5 h**. Conviene correrla de noche.

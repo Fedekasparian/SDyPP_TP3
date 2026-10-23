@@ -1,0 +1,62 @@
+# =============================================================================
+# MACHETE: por que existen DOS archivos de alertas
+# =============================================================================
+# Las mismas 4 alertas, en los dos formatos que existen:
+#
+#   alerts.yaml          -> kind: PrometheusRule. Es un CRD, o sea un objeto de
+#                           Kubernetes que lee el Prometheus Operator
+#                           (kube-prometheus-stack). Solo sirve DENTRO de k8s.
+#   alerts-compose.yml   -> este archivo. Formato nativo de Prometheus: un
+#                           `groups:` suelto, que se carga por `rule_files` en
+#                           prometheus-compose.yml. Es el que corre en local.
+#
+# El contenido de `groups:` es identico al de `spec.groups` de alerts.yaml: un
+# PrometheusRule no es mas que ese bloque envuelto en metadata de k8s. Si
+# cambias una alerta, CAMBIALA EN LOS DOS ARCHIVOS.
+#
+# Sin este archivo la alerta no se puede disparar en local (prometheus-compose
+# tenia `rule_files: []`), y la captura de la alerta disparada es entregable
+# del Hit #4.
+#
+# COMO PROBARLO / como disparar ColaDeTareasAlta a mano:
+#   1. docker compose --profile obs up -d --scale worker=2
+#   2. Apagar los workers para que la cola crezca y nadie la consuma:
+#        docker compose stop worker
+#   3. Mandar carga (mete >100 fragmentos en tasks.tp3-worker):
+#        VA=50 -> 50 archivos x FRAGMENTS_PER_IMAGE=4 = 200 fragmentos
+#        SMOKE=1 VA_LIST=50 ./TP3/loadtest/run_matrix.sh
+#   4. http://localhost:9090/alerts -> ColaDeTareasAlta pasa a PENDING y, a los
+#      2 min (`for: 2m`), a FIRING (rojo). Esa es la captura.
+#   5. Volver a la normalidad: docker compose start worker
+# =============================================================================
+groups:
+  - name: tp3
+    rules:
+      - alert: ColaDeTareasAlta
+        expr: max(tasks_queued{queue=~"tasks\\.tp3-.*"}) > 100
+        for: 2m
+        labels: { severity: warning }
+        annotations:
+          summary: "Mas de 100 fragmentos esperando en {{ $labels.queue }}"
+          description: "Escalar workers (pipeline workers.yml) o revisar si estan caidos."
+      - alert: WorkersSinProcesar
+        expr: |
+          (sum(rate(tasks_processed_total{service="worker"}[2m])) or vector(0)) == 0
+          and sum(tasks_queued{queue=~"tasks\\.tp3-.*"}) > 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "Hay tareas en cola pero ningun worker procesa hace 1 minuto"
+      - alert: FragmentosEstacionadosEnDLQ
+        expr: max(tasks_queued{queue="tasks.parked"}) > 0
+        for: 1m
+        labels: { severity: warning }
+        annotations:
+          summary: "Hay fragmentos que agotaron reintentos: POST /admin/dlq/reprocess"
+      - alert: TasaDeErroresAlta
+        expr: |
+          sum(rate(task_errors_total[5m])) / clamp_min(sum(rate(tasks_processed_total[5m])), 1) > 0.05
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Mas del 5% de las tareas fallan"

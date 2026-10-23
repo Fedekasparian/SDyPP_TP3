@@ -1,0 +1,72 @@
+##################################################################
+# CASO c (determinista): fragmento que agota reintentos -> parked
+# FAIL_RATE=1 con 1 worker. job_id=df9ee9c51b85424d8fbac150c318a5e5
+# Motivo: con FAIL_RATE=0.3 sobre un pool de 6 workers, 'compose up
+# --no-deps worker' sin --scale no recreo todos, la mayoria siguio en
+# FAIL_RATE=0 y ningun fragmento llego a agotar los 3 reintentos.
+##################################################################
+
+===== 1. Estado del job que agoto reintentos (09:52:02)
+{"job_id":"df9ee9c51b85424d8fbac150c318a5e5","status":"dlq","owner":"dlqtest","ops":["sobel"],"worker_image":"tp3-worker","files":1,"fragments":{"total":4,"done":0},"progress_pct":0.0,"timings_s":{"split":0.0176,"queue":null,"processing":null,"join":null,"total":null},"workers":[],"retries":16,"error":"fragmento 0-3 agoto reintentos","results":[]}
+
+===== 2. /stats con el fragmento estacionado
+{"jobs_by_status":{"queued":0,"processing":0,"done":105,"failed":0,"dlq":1},"queues":{"split.requests":0,"tasks.dlq":0,"tasks.parked":4,"tasks.tp3-worker":0},"active_workers":["7469825e610a-07a0f8"],"latency_s":{"p50":1.5493,"p95":279.2559,"p99":282.064,"samples":105},"error_rate":0.0094}
+
+===== 3. task_errors_total (ahora SI existe la serie)
+   service=dlq-monitor reason=max_retries valor=4
+   service=worker reason=RuntimeError valor=16
+
+===== 4. Alerta FragmentosEstacionadosEnDLQ (for: 1m), muestras cada 15s
+09:52:04  FragmentosEstacionadosEnDLQ      inactive activas=0
+09:52:04  TasaDeErroresAlta                inactive activas=0
+   ---
+09:52:19  FragmentosEstacionadosEnDLQ      inactive activas=0
+09:52:19  TasaDeErroresAlta                inactive activas=0
+   ---
+09:52:35  FragmentosEstacionadosEnDLQ      inactive activas=0
+09:52:35  TasaDeErroresAlta                inactive activas=0
+   ---
+09:52:50  FragmentosEstacionadosEnDLQ      inactive activas=0
+09:52:50  TasaDeErroresAlta                inactive activas=0
+   ---
+09:53:06  FragmentosEstacionadosEnDLQ      pending  activas=1
+09:53:06  TasaDeErroresAlta                inactive activas=0
+   ---
+09:53:22  FragmentosEstacionadosEnDLQ      pending  activas=1
+09:53:22  TasaDeErroresAlta                inactive activas=0
+   ---
+09:53:38  FragmentosEstacionadosEnDLQ      pending  activas=1
+09:53:38  TasaDeErroresAlta                inactive activas=0
+   ---
+09:53:53  FragmentosEstacionadosEnDLQ      firing   activas=1
+09:53:53  TasaDeErroresAlta                inactive activas=0
+   ---
+
+===== 5. Workers sanos de nuevo (FAIL_RATE=0, 2 replicas) (09:54:08)
+ Container sdypp_tp3-worker-1 Started 
+ Container sdypp_tp3-worker-2 Starting 
+ Container sdypp_tp3-worker-2 Started 
+   FAIL_RATE en el contenedor: 0
+
+===== 6. POST /admin/dlq/reprocess (09:54:24)
+{"reprocessed":4,"jobs":["df9ee9c51b85424d8fbac150c318a5e5"]}
+
+===== 7. Estado del job DESPUES del reproceso (09:54:49)
+{"job_id":"df9ee9c51b85424d8fbac150c318a5e5","status":"done","owner":"dlqtest","ops":["sobel"],"worker_image":"tp3-worker","files":1,"fragments":{"total":4,"done":4},"progress_pct":100.0,"timings_s":{"split":0.0176,"queue":205.1626,"processing":0.0338,"join":0.0083,"total":205.2839},"workers":["296dfcd41281-d2ccae","bc536c9da3ab-72fec7"],"retries":16,"error":"","results":["/jobs/df9ee9c51b85424d8fbac150c318a5e5/result/0"]}
+
+===== 8. /stats DESPUES
+{"jobs_by_status":{"queued":0,"processing":0,"done":106,"failed":0,"dlq":0},"queues":{"split.requests":0,"tasks.dlq":0,"tasks.parked":0,"tasks.tp3-worker":0},"active_workers":["296dfcd41281-d2ccae","bc536c9da3ab-72fec7"],"latency_s":{"p50":1.5727,"p95":279.2559,"p99":282.064,"samples":106},"error_rate":0.0}
+
+===== 9. Alertas al final (deberian volver a inactive)
+09:54:50  FragmentosEstacionadosEnDLQ      firing   activas=1
+09:54:50  TasaDeErroresAlta                inactive activas=0
+   ---
+09:55:06  FragmentosEstacionadosEnDLQ      firing   activas=1
+09:55:06  TasaDeErroresAlta                inactive activas=0
+   ---
+09:55:21  FragmentosEstacionadosEnDLQ      firing   activas=1
+09:55:21  TasaDeErroresAlta                inactive activas=0
+   ---
+09:55:37  FragmentosEstacionadosEnDLQ      firing   activas=1
+09:55:37  TasaDeErroresAlta                inactive activas=0
+   ---

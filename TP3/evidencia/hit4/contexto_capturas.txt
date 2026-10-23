@@ -1,0 +1,62 @@
+Contexto de las capturas de Grafana (Hit #4)
+============================================
+Fecha: 22/10/2026. Dashboard "TP3 - Sobel distribuido" (uid tp3-main),
+Grafana 11.2.0 en docker-compose, ventana de tiempo "ultimos 15 min".
+
+Que estaba corriendo: la PASADA 1 de la matriz R5 (V1=10KB, las 54 celdas
+livianas), con 2 workers, entre las 10:21 y las 10:37. Las capturas cubren
+las primeras ~24 celdas de esa pasada.
+
+  latencia_p50_p95_p99.png            panel 8  "Latencia HTTP backend"
+  rabbitmq_mensajes_en_cola.png       panel 5  "Mensajes en cola (por cola)"
+  rabbitmq_publicados_consumidos.png  panel 6  "RabbitMQ: publicados / consumidos"
+  throughput.png                      panel 9  "Throughput (tareas/s por servicio)"
+
+Lectura rapida (para el informe, seccion 6):
+- La cola tasks.tp3-worker dibuja un diente de sierra: cada celda de k6 publica
+  su rafaga y los 2 workers la drenan antes de la siguiente. Los picos crecen de
+  ~150 a ~1.800 y al final a ~6.500 mensajes, que es cuando la matriz pasa a las
+  celdas de VA=50 (50 fragmentos por request).
+- publicados y consumidos se siguen casi superpuestos (~400 msg/s): los workers
+  mantienen el ritmo de publicacion; lo que crece es la profundidad instantanea
+  de la cola, no un atraso sostenido.
+- tasks.parked y tasks.dlq quedan planas en 0: en esta pasada no hubo
+  reintentos agotados. Los casos de DLQ se fuerzan aparte (paso 8).
+- La latencia HTTP del backend es baja (p50 ~10 ms, p95 ~30-90 ms, p99 con picos
+  a 200-450 ms). Es el tiempo de ACEPTAR el job, no de procesarlo: el
+  procesamiento end-to-end se mide en k6 (job_latency) y esta en summary.md.
+- throughput: worker, joiner y dlq-monitor se mueven juntos (~80-160 tareas/s) y
+  split queda abajo (~20), que es lo esperado: split procesa 1 mensaje por
+  request y los demas 1 por fragmento.
+
+Capturas agregadas el 23/10/2026 (modo kiosk, sin el menu de Grafana)
+---------------------------------------------------------------------
+
+  latencia_por_fragmento.png   panel 7   "Latencia procesamiento por fragmento (worker)"
+                               ventana: ultimos 85 min (08:40 a 10:05)
+  tasa_de_errores.png          panel 10  "Tasa de errores"
+                               ventana: ultimos 15 min (09:50 a 10:04)
+
+Lectura:
+- panel 7: p50 ~40 ms, p95 ~85 ms, p99 entre 100 y 220 ms. Es el tiempo de
+  aplicar la cadena de operaciones a UN fragmento, no el end-to-end del job.
+  Los datos se concentran entre 08:50 y 08:55 (pasada de celdas de V1=1MB) y en
+  marcas sueltas cerca de 09:42-09:46; entre medio no hubo carga.
+- panel 10: plano en 0% y despues un escalon a ~12%, que es la corrida con
+  FAIL_RATE=0.3 sobre 2 workers entre 10:01 y 10:04. El eje llega a 14%.
+
+  OJO con la historia de este panel: la consulta original era
+  errores / clamp_min(procesados, 0.001). Con errores y casi nada procesado, esa
+  razon no esta acotada y el eje del panel llegaba a 10000%, que para una "tasa
+  de errores" es absurdo. Se corrigio en gen_dashboard.py poniendo los INTENTOS
+  en el denominador (procesados + fallados), lo que la acota a [0, 1]. La captura
+  es posterior al arreglo.
+
+  Segundo detalle: una rafaga instantanea de errores NO aparece en este panel.
+  rate() necesita que el contador suba a lo largo del tiempo; si los errores
+  entran todos de golpe y el contador queda plano, la tasa da 0. Por eso la
+  captura necesito una falla SOSTENIDA y no el caso puntual de DLQ.
+
+PENDIENTE: los paneles 1 a 4 (CPU y memoria por pod y por nodo) quedan en
+"No data" en docker-compose porque salen de cAdvisor y node-exporter, que solo
+existen en Kubernetes. Va declarado en el informe (seccion 6).

@@ -377,7 +377,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum(rate(task_errors_total[1m])) / clamp_min(sum(rate(tasks_processed_total[1m])), 0.001)",
+          "expr": "sum(rate(task_errors_total[1m])) / clamp_min(sum(rate(tasks_processed_total[1m])) + sum(rate(task_errors_total[1m])), 0.001)",
           "legendFormat": "tareas"
         },
         {

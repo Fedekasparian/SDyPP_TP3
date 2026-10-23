@@ -17,6 +17,8 @@ services:
       RABBITMQ_DEFAULT_PASS: ${RABBIT_PASS}
     volumes:
       - ./TP3/observability/rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      # Hit #4 (D): metricas por cola. Ver prometheus.conf.
+      - ./TP3/observability/rabbitmq/prometheus.conf:/etc/rabbitmq/conf.d/20-prometheus.conf:ro
     ports: ["5672:5672", "15672:15672", "15692:15692"]
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
@@ -79,6 +81,7 @@ services:
     image: prom/prometheus:v2.54.1
     volumes:
       - ./TP3/observability/prometheus-compose.yml:/etc/prometheus/prometheus.yml:ro
+      - ./TP3/observability/alerts-compose.yml:/etc/prometheus/alerts.yml:ro
     ports: ["9090:9090"]
 
   grafana:

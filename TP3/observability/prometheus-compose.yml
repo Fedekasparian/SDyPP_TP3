@@ -1,7 +1,9 @@
 # Prometheus para docker-compose (en K8s se usan ServiceMonitors, ver servicemonitors.yaml)
 global:
   scrape_interval: 5s
-rule_files: []
+# Alertas del Hit #4 en formato nativo (el PrometheusRule de alerts.yaml solo
+# lo entiende el operator dentro de k8s). Ver alerts-compose.yml.
+rule_files: ["/etc/prometheus/alerts.yml"]
 scrape_configs:
   - job_name: backend
     static_configs: [{ targets: ["backend:8000"] }]
