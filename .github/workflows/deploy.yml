@@ -37,14 +37,17 @@ jobs:
           REDIS_PASS=$(gcloud secrets versions access latest --secret=tp3-redis-pass)
           AUTH_SECRET=$(gcloud secrets versions access latest --secret=tp3-auth-secret)
           echo "::add-mask::$RABBIT_PASS"; echo "::add-mask::$REDIS_PASS"; echo "::add-mask::$AUTH_SECRET"
+          RABBIT_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$RABBIT_PASS")
+          REDIS_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$REDIS_PASS")
+          echo "::add-mask::$RABBIT_ENC"; echo "::add-mask::$REDIS_ENC"
           kubectl create namespace tp3 --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n tp3 create secret generic rabbitmq-auth --from-literal=rabbitmq-password="$RABBIT_PASS" \
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n tp3 create secret generic redis-auth --from-literal=redis-password="$REDIS_PASS" \
             --dry-run=client -o yaml | kubectl apply -f -
           kubectl -n tp3 create secret generic tp3-secrets \
-            --from-literal=RABBIT_URL="amqp://tp3:${RABBIT_PASS}@rabbitmq:5672/" \
-            --from-literal=REDIS_URL="redis://:${REDIS_PASS}@redis:6379/0" \
+            --from-literal=RABBIT_URL="amqp://tp3:${RABBIT_ENC}@rabbitmq:5672/" \
+            --from-literal=REDIS_URL="redis://:${REDIS_ENC}@redis:6379/0" \
             --from-literal=AUTH_SECRET="$AUTH_SECRET" \
             --dry-run=client -o yaml | kubectl apply -f -
       - name: RabbitMQ y Redis (nodepool infra)
