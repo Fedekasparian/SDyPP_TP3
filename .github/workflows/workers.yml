@@ -1,11 +1,14 @@
 # Pipeline 2 (workers dinamicos): crea/destruye las VMs workers fuera del cluster.
-# plan en PR; apply manual (workflow_dispatch) con la cantidad deseada.
+# plan en PR; apply al mergear los cambios de Terraform o manualmente.
 # TODO (deseable): job programado que lea la profundidad de tasks.<pool> en /stats
 # y calcule worker_count automaticamente.
 name: workers
 on:
   pull_request:
-    paths: ["TP3/infra/terraform/workers/**"]
+    paths: ["TP3/infra/terraform/workers/**", ".github/workflows/workers.yml"]
+  push:
+    branches: [main]
+    paths: ["TP3/infra/terraform/workers/**", ".github/workflows/workers.yml"]
   workflow_dispatch:
     inputs:
       worker_count:
@@ -25,9 +28,7 @@ env:
   TF_VAR_project_id: ${{ vars.GCP_PROJECT }}
   TF_VAR_region: ${{ vars.GCP_REGION }}
   TF_VAR_workers_service_account: ${{ vars.WORKERS_SA }}
-  TF_VAR_rabbit_host: ${{ vars.RABBIT_INTERNAL_IP }}
-  TF_VAR_redis_host: ${{ vars.REDIS_INTERNAL_IP }}
-  TF_VAR_worker_count: ${{ inputs.worker_count || '0' }}
+  TF_VAR_worker_count: ${{ inputs.worker_count || vars.WORKER_COUNT || '0' }}
   TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:${{ inputs.worker_tag || 'latest' }}
 
 jobs:
@@ -39,14 +40,49 @@ jobs:
       run: { working-directory: TP3/infra/terraform/workers }
     steps:
       - uses: actions/checkout@v4
+      - name: Require explicit worker count for automatic apply
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          DESIRED_WORKER_COUNT: ${{ vars.WORKER_COUNT }}
+        run: |
+          if [[ ! "$DESIRED_WORKER_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Configure WORKER_COUNT explicitly before automatic apply (0 destroys existing worker VMs)."
+            exit 1
+          fi
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
           service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: tp3
+          location: ${{ vars.GKE_ZONE }}
+      - name: Resolve internal service addresses
+        shell: bash
+        run: |
+          wait_for_ip() {
+            local service="$1"
+            local address=""
+            for _ in $(seq 1 60); do
+              address="$(kubectl -n tp3 get service "$service" -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)"
+              if [[ -n "$address" ]]; then
+                printf '%s' "$address"
+                return 0
+              fi
+              sleep 10
+            done
+            echo "Timed out waiting for internal IP for service $service" >&2
+            return 1
+          }
+          rabbit_host="$(wait_for_ip rabbitmq-internal)"
+          redis_host="$(wait_for_ip redis-internal)"
+          echo "TF_VAR_rabbit_host=$rabbit_host" >> "$GITHUB_ENV"
+          echo "TF_VAR_redis_host=$redis_host" >> "$GITHUB_ENV"
       - uses: hashicorp/setup-terraform@v3
       - run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
       - run: terraform fmt -check
       - run: terraform validate
       - run: terraform plan -input=false -out=tfplan
-      - if: github.event_name == 'workflow_dispatch'
+      - if: github.event_name != 'pull_request'
         run: terraform apply -input=false tfplan

@@ -63,6 +63,11 @@ jobs:
   apps:
     needs: base-services
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        app: [backend, split, joiner, dlq-monitor, frontend]
     steps:
       - uses: actions/checkout@v4
       - uses: google-github-actions/auth@v2
@@ -71,13 +76,11 @@ jobs:
           service_account: ${{ vars.GCP_CI_SA }}
       - uses: google-github-actions/get-gke-credentials@v2
         with: { cluster_name: tp3, location: "${{ vars.GKE_ZONE }}" }
-      - name: Deploy apps (frontend, backend, split, joiner, dlq-monitor)
+      - name: Deploy ${{ matrix.app }}
         working-directory: TP3/k8s/overlays/gke
         run: |
           for s in backend split joiner dlq-monitor frontend; do
             kustomize edit set image tp3/$s=$REGISTRY/$s:$TAG
           done
           kubectl apply -k .
-          for s in backend split joiner dlq-monitor frontend; do
-            kubectl -n tp3 rollout status deploy/$s --timeout=300s
-          done
+          kubectl -n tp3 rollout status deploy/${{ matrix.app }} --timeout=300s
