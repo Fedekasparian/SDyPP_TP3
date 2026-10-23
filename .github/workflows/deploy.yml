@@ -53,11 +53,12 @@ jobs:
           kubectl -n tp3 rollout status statefulset/rabbitmq --timeout=600s
           kubectl -n tp3 rollout status statefulset/redis --timeout=300s
       - name: Observabilidad (Hit #4)
+        continue-on-error: true
         run: |
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
             -n monitoring --create-namespace -f TP3/observability/kube-prometheus-stack-values.yaml \
-            --wait --timeout 15m
+            --wait --timeout 5m
           kubectl apply -k TP3/observability
 
   apps:
