@@ -1,5 +1,7 @@
 # Plan TP3 (Partes 1 y 2), dividido entre 4 integrantes
 
+> **Actualización B (20/10/2026):** este plan conserva el reparto original. Estado real, pruebas y pendientes de B: [TP3/docs/parte-b.md](TP3/docs/parte-b.md). A ya está integrada; varios archivos listados abajo como faltantes ya existían en la base.
+
 ## Contexto
 Consignas: practica-3-parte-1 y parte-2 (sd2026). **Entrega: viernes 23/10/2026, todos los puntos.** Hoy es martes 20/10, así que quedan unos 3 días. Si falta cualquier entregable de R1–R5, el TP se rehace.
 

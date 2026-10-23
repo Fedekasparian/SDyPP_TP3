@@ -18,13 +18,14 @@ def backoff_delays(max_delay: float = 30.0):
 
 
 def retry_with_backoff(
-    fn: Callable[[], T], what: str, max_attempts: int = 10, max_delay: float = 30.0
+    fn: Callable[[], T], what: str, max_attempts: int = 10, max_delay: float = 30.0,
+    exceptions: tuple[type[Exception], ...] = (Exception,),
 ) -> T:
     delays = backoff_delays(max_delay)
     for attempt in range(1, max_attempts + 1):
         try:
             return fn()
-        except Exception as exc:  # noqa: BLE001
+        except exceptions as exc:
             if attempt == max_attempts:
                 log.error("%s: fallo definitivo tras %d intentos: %s", what, attempt, exc)
                 raise

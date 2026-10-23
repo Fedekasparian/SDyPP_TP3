@@ -1,0 +1,17 @@
+R4 · 2026-10-21T01:43:52.525271+00:00 · base=http://127.0.0.1:8081/api
+Replicas distintas requeridas: 3
+OK   Sin token -> HTTP 401
+OK   Token invalido -> HTTP 401
+OK   Usuario sin permiso admin -> HTTP 403
+OK   Admin consulta estadisticas -> HTTP 200
+OK   Submit asincronico -> HTTP 202
+job_id=5e0333b3027b44c39a769f216915df99
+OK   Aislamiento usuario B (status) -> HTTP 404
+OK   Aislamiento usuario B (/events) -> HTTP 404
+OK   Aislamiento usuario B (/result/0) -> HTTP 404
+OK   30 lecturas autorizadas del mismo job -> 30/30
+OK   Backends distintos observados -> 0d274a5e41ed, 3ecc68ecd6bc, 71e48f40253d
+OK   Pipeline termina -> done
+OK   Descarga del resultado -> HTTP 200
+OK   Progreso SSE autorizado -> HTTP 200
+---- 13 OK, 0 FAIL

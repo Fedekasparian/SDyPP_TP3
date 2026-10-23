@@ -57,7 +57,7 @@ resource "google_project_iam_member" "ci" {
 }
 
 resource "google_project_iam_member" "nodes" {
-  for_each = toset(["roles/logging.logWriter", "roles/monitoring.metricWriter", "roles/monitoring.viewer"])
+  for_each = toset(["roles/logging.logWriter", "roles/monitoring.metricWriter", "roles/monitoring.viewer", "roles/compute.viewer"])
   project  = var.project_id
   role     = each.value
   member   = "serviceAccount:${google_service_account.gke_nodes.email}"

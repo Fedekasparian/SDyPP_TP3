@@ -3,7 +3,7 @@
 name: infra
 on:
   pull_request:
-    paths: ["TP3/infra/terraform/gke/**"]
+    paths: ["TP3/infra/terraform/gke/**", ".github/workflows/infra.yml"]
   push:
     branches: [main]
     paths: ["TP3/infra/terraform/gke/**"]
@@ -17,6 +17,7 @@ permissions:
 env:
   TF_VAR_project_id: ${{ vars.GCP_PROJECT }}
   TF_VAR_region: ${{ vars.GCP_REGION }}
+  TF_VAR_zone: ${{ vars.GKE_ZONE }}
   TF_VAR_nodes_service_account: ${{ vars.GKE_NODES_SA }}
 
 jobs:

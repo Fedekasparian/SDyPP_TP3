@@ -7,6 +7,7 @@ import base64
 import hashlib
 import hmac
 import json
+import math
 import time
 
 from . import config
@@ -34,6 +35,8 @@ def issue_token(sub: str, role: str, ttl_s: int = 7 * 24 * 3600, secret: str | N
     secret = secret or config.AUTH_SECRET
     if not secret:
         raise AuthError("AUTH_SECRET no configurado")
+    if not isinstance(sub, str) or not sub.strip():
+        raise AuthError("usuario invalido")
     if role not in ROLES:
         raise AuthError(f"rol invalido: {role}")
     payload = _b64(json.dumps({"sub": sub, "role": role, "exp": int(time.time()) + ttl_s}).encode())
@@ -46,12 +49,17 @@ def verify_token(token: str, secret: str | None = None) -> dict:
         raise AuthError("AUTH_SECRET no configurado")
     try:
         payload, sig = token.split(".", 1)
-    except ValueError as exc:
+        if not hmac.compare_digest(sig, _sign(payload, secret)):
+            raise AuthError("firma invalida")
+        claims = json.loads(_unb64(payload))
+    except (ValueError, TypeError, UnicodeError) as exc:
         raise AuthError("token mal formado") from exc
-    if not hmac.compare_digest(sig, _sign(payload, secret)):
-        raise AuthError("firma invalida")
-    claims = json.loads(_unb64(payload))
-    if claims.get("exp", 0) < time.time():
+    if not isinstance(claims, dict) or not isinstance(claims.get("sub"), str) or not claims["sub"].strip():
+        raise AuthError("identidad invalida")
+    expires = claims.get("exp")
+    if isinstance(expires, bool) or not isinstance(expires, (int, float)) or not math.isfinite(expires):
+        raise AuthError("vencimiento invalido")
+    if expires <= time.time():
         raise AuthError("token expirado")
     if claims.get("role") not in ROLES:
         raise AuthError("rol invalido")

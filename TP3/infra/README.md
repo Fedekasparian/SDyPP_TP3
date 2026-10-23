@@ -16,9 +16,13 @@ Cada módulo tiene `provider.tf`, `variables.tf`, `main.tf` y `outputs.tf`. El s
    ```bash
    gcloud auth application-default login
    cd TP3/infra/terraform/bootstrap
+   # Solo si el bucket todavia no existe: comentar temporalmente backend "gcs".
    terraform init && terraform apply -var project_id=<PROJECT>
-   # migrar su state al bucket recién creado (ver el comentario en provider.tf)
+   # Reactivar backend "gcs" y migrar el state local al bucket recien creado:
+   terraform init -migrate-state -backend-config="bucket=<PROJECT>-tp3-tfstate"
    ```
+   Si el bucket y el state remoto ya existen, conservar el backend activo y usar directamente
+   `terraform init -backend-config="bucket=<PROJECT>-tp3-tfstate"`; no crear un state local nuevo.
 3. Cargar los valores de los secretos en Secret Manager. Esto es local y no va al repo:
    ```bash
    openssl rand -base64 24 | gcloud secrets versions add tp3-rabbit-pass --data-file=-
@@ -37,11 +41,12 @@ Cada módulo tiene `provider.tf`, `variables.tf`, `main.tf` y `outputs.tf`. El s
    | `GKE_NODES_SA` | output `gke_nodes_service_account` |
    | `WORKERS_SA` | output `workers_service_account` |
    | `TF_STATE_BUCKET` | output `tfstate_bucket` |
-   | `RABBIT_INTERNAL_IP` / `REDIS_INTERNAL_IP` | después del primer deploy: `kubectl -n tp3 get svc rabbitmq-internal redis-internal` |
+   | `WORKER_COUNT` | cantidad deseada de VMs; obligatoria para aplicar automaticamente al mergear cambios de workers |
 
-5. Ejecutar el workflow `infra` (dispatch), después `ci` (push a main) y `deploy`, que corre solo después de `ci`. Para los workers, `workers` con dispatch y `worker_count=N`.
+5. Ejecutar el workflow `infra` (dispatch), después `ci` (push a main) y `deploy`, que corre solo después de `ci`. `workers` corre en PR para validar el plan, al mergear cambios de Terraform a `main` y manualmente con `worker_count=N`. El workflow obtiene las IPs internas de RabbitMQ y Redis desde GKE; no hay que copiarlas a GitHub Variables.
 6. Health-checks públicos: `http://<ingress-ip>/health` y `http://<ingress-ip>/api/health`.
 
 ## Costos
 - Los nodos y las VMs son **spot** por defecto.
 - Al terminar cada sesión: `workers` con `worker_count=0`, y si no se usa el cluster por un rato, `terraform destroy` en `gke/`.
+- En pushes a `main`, `workers` exige `WORKER_COUNT` antes de acceder a GCP. Si falta o no es un entero no negativo, termina sin aplicar cambios. Definir `0` explicitamente destruye las VMs de workers existentes; no es un valor por defecto seguro.

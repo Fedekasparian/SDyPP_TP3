@@ -1,0 +1,199 @@
+Context: k3d-sdypp
+Image: us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest
+Evidence: /c/Users/usuario/Desktop/SDyPP/Tp3/TP3/evidencia/r1/r1-20261022-235207.txt
+namespace/r1-evidence created
+deployment.apps/r1-probe created
+Expected failure without imagePullSecret:
+NAME                        READY   STATUS             RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+r1-probe-6d7c489855-4878f   0/1     ImagePullBackOff   0          21s   10.42.0.29   k3d-sdypp-server-0   <none>           <none>
+Name:             r1-probe-6d7c489855-4878f
+Namespace:        r1-evidence
+Priority:         0
+Service Account:  default
+Node:             k3d-sdypp-server-0/172.19.0.3
+Start Time:       Thu, 22 Oct 2026 23:52:08 -0300
+Labels:           app=r1-probe
+                  pod-template-hash=6d7c489855
+Annotations:      <none>
+Status:           Pending
+IP:               10.42.0.29
+IPs:
+  IP:           10.42.0.29
+Controlled By:  ReplicaSet/r1-probe-6d7c489855
+Containers:
+  probe:
+    Container ID:  
+    Image:         us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest
+    Image ID:      
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      sleep 3600
+    State:          Waiting
+      Reason:       ImagePullBackOff
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-9vqrj (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-9vqrj:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type     Reason     Age               From               Message
+  ----     ------     ----              ----               -------
+  Normal   Scheduled  21s               default-scheduler  Successfully assigned r1-evidence/r1-probe-6d7c489855-4878f to k3d-sdypp-server-0
+  Normal   BackOff    20s               kubelet            spec.containers{probe}: Back-off pulling image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest"
+  Warning  Failed     20s               kubelet            spec.containers{probe}: Error: ImagePullBackOff
+  Normal   Pulling    5s (x2 over 21s)  kubelet            spec.containers{probe}: Pulling image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest"
+  Warning  Failed     3s (x2 over 20s)  kubelet            spec.containers{probe}: Failed to pull image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to pull and unpack image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to resolve reference "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://us-central1-docker.pkg.dev/v2/token?scope=repository%3Atp3distribuidos%2Ftp3%2Fbackend%3Apull&service=us-central1-docker.pkg.dev: 403 Forbidden
+  Warning  Failed     3s (x2 over 20s)  kubelet            spec.containers{probe}: Error: ErrImagePull
+secret/artifact-registry created
+deployment.apps/r1-probe patched
+Waiting for deployment "r1-probe" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "r1-probe" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "r1-probe" rollout to finish: 1 old replicas are pending termination...
+deployment "r1-probe" successfully rolled out
+Successful pull with imagePullSecret:
+NAME                        READY   STATUS        RESTARTS   AGE   IP           NODE                 NOMINATED NODE   READINESS GATES
+r1-probe-578bdb445c-qdqnh   1/1     Running       0          17s   10.42.0.30   k3d-sdypp-server-0   <none>           <none>
+r1-probe-6d7c489855-4878f   0/1     Terminating   0          40s   10.42.0.29   k3d-sdypp-server-0   <none>           <none>
+Name:             r1-probe-578bdb445c-qdqnh
+Namespace:        r1-evidence
+Priority:         0
+Service Account:  default
+Node:             k3d-sdypp-server-0/172.19.0.3
+Start Time:       Thu, 22 Oct 2026 23:52:31 -0300
+Labels:           app=r1-probe
+                  pod-template-hash=578bdb445c
+Annotations:      <none>
+Status:           Running
+IP:               10.42.0.30
+IPs:
+  IP:           10.42.0.30
+Controlled By:  ReplicaSet/r1-probe-578bdb445c
+Containers:
+  probe:
+    Container ID:  containerd://40833372f36e123fe9422345da62ef0cf817afb2457de4d0b5ba499727841eb4
+    Image:         us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest
+    Image ID:      us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend@sha256:669bae8b9b4c7f8c242276b238dd7ace86074634bb95a4c06b728bf44e12cf53
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      sleep 3600
+    State:          Running
+      Started:      Thu, 22 Oct 2026 23:52:47 -0300
+    Ready:          True
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-csjmb (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       True 
+  ContainersReady             True 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-csjmb:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+
+
+Name:                      r1-probe-6d7c489855-4878f
+Namespace:                 r1-evidence
+Priority:                  0
+Service Account:           default
+Node:                      k3d-sdypp-server-0/172.19.0.3
+Start Time:                Thu, 22 Oct 2026 23:52:08 -0300
+Labels:                    app=r1-probe
+                           pod-template-hash=6d7c489855
+Annotations:               <none>
+Status:                    Terminating (lasts <invalid>)
+Termination Grace Period:  30s
+IP:                        10.42.0.29
+IPs:
+  IP:           10.42.0.29
+Controlled By:  ReplicaSet/r1-probe-6d7c489855
+Containers:
+  probe:
+    Container ID:  
+    Image:         us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest
+    Image ID:      
+    Port:          <none>
+    Host Port:     <none>
+    Command:
+      sh
+      -c
+      sleep 3600
+    State:          Waiting
+      Reason:       ContainerCreating
+    Ready:          False
+    Restart Count:  0
+    Environment:    <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-9vqrj (ro)
+Conditions:
+  Type                        Status
+  PodReadyToStartContainers   True 
+  Initialized                 True 
+  Ready                       False 
+  ContainersReady             False 
+  PodScheduled                True 
+Volumes:
+  kube-api-access-9vqrj:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    Optional:                false
+    DownwardAPI:             true
+QoS Class:                   BestEffort
+Node-Selectors:              <none>
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+LAST SEEN   TYPE      REASON              OBJECT                           MESSAGE
+40s         Normal    Scheduled           pod/r1-probe-6d7c489855-4878f    Successfully assigned r1-evidence/r1-probe-6d7c489855-4878f to k3d-sdypp-server-0
+17s         Normal    Scheduled           pod/r1-probe-578bdb445c-qdqnh    Successfully assigned r1-evidence/r1-probe-578bdb445c-qdqnh to k3d-sdypp-server-0
+40s         Normal    ScalingReplicaSet   deployment/r1-probe              Scaled up replica set r1-probe-6d7c489855 to 1
+40s         Normal    SuccessfulCreate    replicaset/r1-probe-6d7c489855   Created pod: r1-probe-6d7c489855-4878f
+24s         Normal    Pulling             pod/r1-probe-6d7c489855-4878f    Pulling image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest"
+22s         Warning   Failed              pod/r1-probe-6d7c489855-4878f    Failed to pull image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to pull and unpack image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to resolve reference "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest": failed to authorize: failed to fetch anonymous token: unexpected status from GET request to https://us-central1-docker.pkg.dev/v2/token?scope=repository%3Atp3distribuidos%2Ftp3%2Fbackend%3Apull&service=us-central1-docker.pkg.dev: 403 Forbidden
+22s         Warning   Failed              pod/r1-probe-6d7c489855-4878f    Error: ErrImagePull
+17s         Normal    SuccessfulCreate    replicaset/r1-probe-578bdb445c   Created pod: r1-probe-578bdb445c-qdqnh
+17s         Normal    Pulling             pod/r1-probe-578bdb445c-qdqnh    Pulling image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest"
+17s         Normal    ScalingReplicaSet   deployment/r1-probe              Scaled up replica set r1-probe-578bdb445c to 1
+11s         Normal    BackOff             pod/r1-probe-6d7c489855-4878f    Back-off pulling image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest"
+11s         Warning   Failed              pod/r1-probe-6d7c489855-4878f    Error: ImagePullBackOff
+1s          Normal    Started             pod/r1-probe-578bdb445c-qdqnh    Started container probe
+1s          Normal    Created             pod/r1-probe-578bdb445c-qdqnh    Created container probe
+1s          Normal    Pulled              pod/r1-probe-578bdb445c-qdqnh    Successfully pulled image "us-central1-docker.pkg.dev/tp3distribuidos/tp3/backend:latest" in 15.667s (15.667s including waiting). Image size: 83793537 bytes.
+1s          Normal    SuccessfulDelete    replicaset/r1-probe-6d7c489855   Deleted pod: r1-probe-6d7c489855-4878f
+1s          Normal    ScalingReplicaSet   deployment/r1-probe              Scaled down replica set r1-probe-6d7c489855 to 0 from 1
+Evidence saved to /c/Users/usuario/Desktop/SDyPP/Tp3/TP3/evidencia/r1/r1-20261022-235207.txt
