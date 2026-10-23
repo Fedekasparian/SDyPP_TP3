@@ -22,6 +22,9 @@ flowchart LR
   QT -. nack / delivery-limit .-> DLX{{tasks.dlx}} --> DLQ[[tasks.dlq]]
   DLQ --> M[dlq-monitor]
   QM --> M
+  M -->|stream de progreso con TTL| R
+  R -->|snapshot y eventos| BE
+  BE -->|SSE autorizado| FE
   M -->|attempt+1| QT
   M -->|agotó reintentos| P[[tasks.parked]]
   P -->|POST /admin/dlq/reprocess| QT

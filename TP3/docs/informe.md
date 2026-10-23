@@ -22,6 +22,12 @@ _(resumen de ex1 a ex5 y lecciones aprendidas)_
 - Nodepools, workers fuera del cluster, DLQ, retry y fanout.
 - Pipelines 1.1 a 1.N y pipeline 2.
 
+### Plataforma de aplicación (B)
+
+La API valida antes de encolar y conserva estado en Redis. Cada request verifica un Bearer firmado con HMAC-SHA256, lo que permite usar cualquier réplica sin afinidad. Las llamadas bloqueantes de Redis/pika y el procesamiento de validación se ejecutan fuera del event loop. El consumidor del fanout guarda progreso en un Redis Stream con TTL; el frontend recibe snapshots mediante SSE y ofrece estadísticas para admin.
+
+La validación local incluye 58 pruebas (13 de integración con servicios reales), igualdad del resultado distribuido con el cálculo centralizado y evidencia R4 con tres backends. La ejecución R4 en GKE queda pendiente del despliegue de C. Detalles y límites: [parte-b.md](parte-b.md).
+
 ## 6. Hit #4: observabilidad (D)
 - Capturas del dashboard y de la alerta disparada.
 
@@ -31,7 +37,7 @@ _(resumen de ex1 a ex5 y lecciones aprendidas)_
 | R1 | Captura de `ImagePullBackOff` y del pull exitoso | [r1-evidencia.md](r1-evidencia.md) |
 | R2 | Requests inválidos devuelven 400 y la cola no cambia | video, logs |
 | R3 | [contrato.md](contrato.md) | |
-| R4 | Salida de `scripts/r4_evidence.sh` con 3 réplicas | |
+| R4 | 13 verificaciones locales, tres backends distintos; GKE pendiente | [r4_local.txt](../evidencia/r4_local.txt), [parte B](parte-b.md) |
 | R5 | Matriz completa | sección 8 |
 
 ## 8. Análisis de desempeño (D)

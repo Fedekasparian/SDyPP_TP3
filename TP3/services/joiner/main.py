@@ -36,6 +36,7 @@ def handle(r, ch, method, body: bytes) -> None:
         r.hset(f"job:{job_id}:meta", res["fragment_id"],
                json.dumps({"pad_top": res["pad_top"], "core_h": res["core_h"]}))
         r.sadd(f"job:{job_id}:done", res["fragment_id"])
+        store.expire_job_keys(r, job_id, f"job:{job_id}:done", f"job:{job_id}:meta")
         store.mark_time(r, job_id, "t_proc_end")
         job = {k.decode(): v.decode() for k, v in r.hgetall(jk).items()}
         total = int(job.get("total_fragments", 0))
@@ -47,6 +48,7 @@ def handle(r, ch, method, body: bytes) -> None:
             latency = time.time() - float(job["t_submit"])
             r.lpush("stats:latencies", latency)
             r.ltrim("stats:latencies", 0, 4999)
+            r.expire("stats:latencies", store.JOB_TTL_S)
             log.info("job=%s DONE (%d fragmentos, %.2fs end-to-end)", job_id, total, latency)
         ch.basic_ack(method.delivery_tag)
         TASKS_PROCESSED.labels(SERVICE).inc()

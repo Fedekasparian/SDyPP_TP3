@@ -40,6 +40,7 @@ def handle(r, ch, method, body: bytes) -> None:
         if FAIL_RATE and random.random() < FAIL_RATE:
             raise RuntimeError("fallo simulado (FAIL_RATE)")
         r.sadd(f"job:{job_id}:workers", WORKER_ID)
+        store.expire_job_keys(r, job_id, f"job:{job_id}:workers")
         store.mark_time(r, job_id, "t_proc_start", only_first=True)
         if r.hget(store.job_key(job_id), "status") == b"queued":
             store.set_status(r, job_id, "processing")

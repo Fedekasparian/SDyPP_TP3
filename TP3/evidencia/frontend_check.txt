@@ -1,0 +1,5 @@
+OK upload -> progreso SSE -> imagen final
+OK usuario sin acceso al panel admin
+OK panel admin con 3 workers y estadisticas reales
+OK vista movil sin desborde horizontal
+OK sin errores JavaScript
