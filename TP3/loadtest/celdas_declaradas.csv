@@ -17,33 +17,108 @@
 #
 # Nota: si alguna de estas celdas se llega a medir, summarize.py le da precedencia
 # a la medicion y esta fila queda ignorada (ver summarize.py, "if clave in medidas").
-V1,V3,VA,VB,VC,motivo
-1MB,2,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,2,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,2,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
-1MB,6,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+matriz,V1,V3,VA,VB,VC,motivo
+r5,1MB,2,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,2,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,2,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+r5,1MB,6,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+
+# --- Tabla del Hit #3 (matriz hit3). Las 40 celdas de V1=10MB y V1=100MB. ---
+# Las de 100MB tienen causa tecnica medida (413 por tamanio). Las de 10MB NO:
+# simplemente no se corrieron. Se distingue a proposito, para no presentar una
+# falta de tiempo como si fuera un limite del sistema.
+hit3,100MB,1,1,1,1,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,1,1,1,5,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,1,1,1,10,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,1,1,1,25,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,1,1,1,50,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,2,1,1,1,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,2,1,1,5,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,2,1,1,10,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,2,1,1,25,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,2,1,1,50,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,4,1,1,1,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,4,1,1,5,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,4,1,1,10,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,4,1,1,25,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,4,1,1,50,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,8,1,1,1,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,8,1,1,5,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,8,1,1,10,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,8,1,1,25,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,100MB,8,1,1,50,"no medible sin regenerar la imagen: 100MB.png pesa 105.482.919 bytes y el backend responde 413 a todo archivo por encima de MAX_FILE_MB (104.857.600). Causa: gen_images.py apuntaba a 100.000.000 y el PNG de ruido queda ~5,5% arriba. El generador quedo corregido (ajusta el lado hasta entrar), pero la fila no se volvio a correr: no entro en el tiempo de maquina del dia de la entrega"
+hit3,10MB,1,1,1,1,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,1,1,1,5,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,1,1,1,10,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,1,1,1,25,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~525 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,1,1,1,50,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~1050 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,2,1,1,1,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,2,1,1,5,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,2,1,1,10,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,2,1,1,25,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~525 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,2,1,1,50,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~1050 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,4,1,1,1,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,4,1,1,5,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,4,1,1,10,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,4,1,1,25,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~525 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,4,1,1,50,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~1050 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,8,1,1,1,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,8,1,1,5,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,8,1,1,10,"no corrida: no entro en el tiempo de maquina disponible el dia de la entrega. No hay impedimento tecnico conocido para esta celda"
+hit3,10MB,8,1,1,25,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~525 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+hit3,10MB,8,1,1,50,"no corrida: no entro en el tiempo de maquina del dia de la entrega y ademas son ~1050 MB de cuerpos multipart en vuelo (una copia por VU, medido en R5), contra ~2,7 GB libres en la maquina"
+
+# --- Celdas de la fila liviana que quedaron cortadas (pasada del 23/10). ---
+# Motivo distinto al de 10MB/100MB: estas estaban EN la pasada y se perdieron
+# cuando se corto por memoria. Son las primeras a recuperar si hay maquina.
+hit3,100KB,4,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,4,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,4,1,1,5,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,4,1,1,10,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,4,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,4,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1KB,8,1,1,1,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1KB,8,1,1,5,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1KB,8,1,1,10,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1KB,8,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1KB,8,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,10KB,8,1,1,1,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,10KB,8,1,1,5,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,10KB,8,1,1,10,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,10KB,8,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,10KB,8,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,8,1,1,1,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,8,1,1,5,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,8,1,1,10,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,8,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,100KB,8,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,8,1,1,1,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,8,1,1,5,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,8,1,1,10,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,8,1,1,25,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"
+hit3,1MB,8,1,1,50,"no corrida: la pasada del 23/10 se corto en la celda 56 de 80 por falta de memoria de la maquina (0,4 GB libres de 13,8 GB). No es un limite del sistema bajo prueba sino del equipo donde se midio. Celda retomable: run_matrix.sh saltea las ya medidas, asi que relanzar el mismo comando la completa sin repetir nada"

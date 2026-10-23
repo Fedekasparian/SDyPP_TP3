@@ -15,12 +15,14 @@ Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 | ✅ | 6 capturas de Grafana en `evidencia/hit4/` + `contexto_capturas.txt` |
 | ✅ | Paso 8: `ColaDeTareasAlta` y `FragmentosEstacionadosEnDLQ` disparadas y registradas |
 | ✅ | Caso de DLQ completo: estacionado → alerta → reproceso → `done` |
-| ✅ | Informe: §6 y §8 completas (6.4 y 8.4 incluidas), §9, §10 y §11 |
+| ✅ | Informe: §6 y §8 completas (6.4, 8.4 y 8.6 incluidas), §9, §10 y §11 |
+| ✅ | **Tabla del Hit #3: 54 medidas + 66 declaradas = 120, ninguna `SIN MEDIR`** (ver abajo) |
+| ✅ | `summarize.py` separa las dos matrices; `gen_images.py` ya no se pasa del tamaño |
 | ⬜ | **Caso c de R5**: matar UN worker con carga en vuelo (ver abajo) |
 | ⬜ | Observabilidad en GKE: el deploy la saltea con `continue-on-error` (ver abajo) |
 | ⬜ | Guion y grabación del video |
 
-**Nada está pusheado.** Los commits los hace D.
+Pusheado a `feat/d-obs-load`. Los commits los hace D.
 
 ### Lo que falta, con el detalle para retomarlo
 
@@ -46,6 +48,34 @@ Dos causas, las dos en archivos de D:
 Arreglado eso se le saca el `continue-on-error` y se le devuelve el `--timeout 15m`.
 Como beneficio, en GKE sí existen cAdvisor y node-exporter, así que se llenarían
 los paneles 1 a 4 que en compose quedan vacíos.
+
+**3. Las 66 celdas declaradas del Hit #3 no entran en esta máquina.** La tabla
+queda cerrada y sin huecos, pero 66 de las 120 celdas llevan motivo en vez de
+números, y el motivo es siempre el mismo: **la memoria del equipo**. Con 13,8 GB
+totales y entre 0,4 y 2,7 GB libres, la pasada del 23/10 se murió en la celda 56
+de 80 —la mató el entorno por presión de memoria del sistema— y las filas de
+10 MB y 100 MB nunca se intentaron. **No es un límite del sistema bajo prueba: es
+el banco de pruebas.** Medir el resto exige otra máquina (o el cluster de GKE), no
+más intentos en esta.
+
+Si alguna vez hay equipo, las celdas son retomables y este es el orden de valor.
+`run_matrix.sh` saltea las que ya tienen JSON, y la medición tiene precedencia
+sobre la declaración, así que no hay que borrar nada de `celdas_declaradas.csv`:
+
+  - **Las 26 que se cortaron** (todo `V3=8` y el final de `V3=4`). Son livianas
+    (≤ 1 MB) y son las que faltan para cerrar el eje de workers, que es donde
+    está el hallazgo de 8.6. `MATRIX=hit3 QUICK=1 INVALID_RATE=0
+    V1_LIST="1KB 10KB 100KB 1MB" ./run_matrix.sh`, ~20 min.
+  - **Las 20 de `V1=10MB`**: agregar `K6_MEMORY=2g V1_LIST=10MB`. `VC=25` y `50`
+    son ~0,5–1,1 GB de cuerpos multipart en vuelo (una copia por VU).
+  - **Las 20 de `V1=100MB`** exigen primero `py TP3/loadtest/gen_images.py 100MB`,
+    porque la imagen vieja pesaba 105.482.919 bytes y el backend rechaza con 413
+    por encima de 104.857.600. El filtro por argumento existe para **no**
+    regenerar `10KB.png` ni `1MB.png`, que son las imágenes con las que se midió
+    R5. Después, solo `V2_LIST="1 5"`: con `VC=10` son 11 VUs × ~210 MB.
+
+Al terminar, regenerar con `MATRIX=hit3 py TP3/loadtest/summarize.py` y actualizar
+los recuentos de §8.6.
 
 ---
 

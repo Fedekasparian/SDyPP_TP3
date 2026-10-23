@@ -22,6 +22,9 @@ _(resumen de ex1 a ex5 y lecciones aprendidas)_
 - Nodepools, workers fuera del cluster, DLQ, retry y fanout.
 - Pipelines 1.1 a 1.N y pipeline 2.
 
+El análisis de desempeño de este hit (la tabla V1 × V2 × V3) es de D y
+está en la sección 8.6 de este informe.
+
 ### Plataforma de aplicación (B)
 
 La API valida antes de encolar y conserva estado en Redis. Cada request verifica un Bearer firmado con HMAC-SHA256, lo que permite usar cualquier réplica sin afinidad. Las llamadas bloqueantes de Redis/pika y el procesamiento de validación se ejecutan fuera del event loop. El consumidor del fanout guarda progreso en un Redis Stream con TTL; el frontend recibe snapshots mediante SSE y ofrece estadísticas para admin.
@@ -482,6 +485,131 @@ siguen ocupando memoria durante 24 horas. Dos mejoras se desprenden:
 2. Mover los blobs a almacenamiento de objetos y dejar en Redis solo los punteros
    y el estado. Redis como *store* de imágenes es lo que hace que el camino del
    fragmento domine el costo.
+
+### 8.6 La tabla del Hit #3: tamaño × concurrencia × workers
+
+La matriz de R5 cruza las cinco variables con `V1` fijo en dos valores. La del
+Hit #3 hace la pregunta complementaria: **barrer el tamaño de la imagen en seis
+órdenes de magnitud** (1 KB a 100 MB) contra concurrencia (`V2`/`VC` = 1, 5, 10,
+25, 50) y cantidad de workers (`V3` = 1, 2, 4, 8), con `VA=1` y `VB=sobel` fijos
+para que la única variable de entrada sea el tamaño. Son **120 celdas**, y la
+tabla completa está en
+[`loadtest/results/summary_hit3.md`](../loadtest/results/summary_hit3.md) y en
+`summary_hit3.csv`.
+
+Se corre con `MATRIX=hit3 ./run_matrix.sh`. Dos diferencias con R5, deliberadas:
+
+- **`INVALID_RATE=0`.** Esta tabla mide latencia y throughput contra el tamaño;
+  el rechazo de payloads corruptos es de R5 y está en 8.4. Mandar un 5% de
+  basura acá solo agregaría ruido a la métrica que se quiere leer.
+- **Salida separada.** `summarize.py` escribe `summary_hit3.{md,csv}` y filtra
+  `celdas_declaradas.csv` por matriz. Las dos matrices comparten claves —
+  `(V1=10KB, V3=2, VA=1, VB=1, VC=1)` es una celda de R5 **y** una del Hit #3 —
+  así que sin separar, correr una pisaba la tabla de la otra y declarar una celda
+  declaraba la del otro lado.
+
+**Recuento: 54 celdas medidas y 66 declaradas, ninguna `SIN MEDIR`.** Las 66 no
+son todas lo mismo, y mezclarlas sería ocultar la diferencia que importa:
+
+| Celdas | Por qué no están medidas | Es un límite de… |
+|---|---|---|
+| 20 (`V1=100MB`) | El archivo pesaba 105.482.919 bytes y el backend responde **413** a todo lo que supere `MAX_FILE_MB` (104.857.600). Ver abajo. | el generador de carga |
+| 20 (`V1=10MB`) | No se corrieron. Con `VC=25` y `50` son además 0,5–1,1 GB de cuerpos en vuelo (una copia por VU, medido en R5) contra ~2,7 GB libres. | el tiempo y la RAM del equipo |
+| 26 (`V3=8` completo, y el final de `V3=4`) | La pasada se cortó en la celda 56 de 80 por falta de memoria de la máquina (0,4 GB libres de 13,8). | el equipo donde se midió |
+
+Ninguna es un límite del sistema bajo prueba, y las 66 son **retomables**:
+`run_matrix.sh` saltea las celdas que ya tienen JSON, así que relanzar el mismo
+comando completa lo que falta sin repetir nada. `summarize.py` da precedencia a
+la medición sobre la declaración, de modo que declararlas no bloquea nada.
+
+**El bug del generador, que casi arruina una fila entera.** `gen_images.py`
+calculaba el lado del cuadrado como `sqrt(objetivo/3)` —tres bytes por píxel—
+suponiendo que el PNG no agrega nada encima. Sobre ruido incompresible sí agrega:
+cabecera, chunks y un byte de filtro por scanline. Todas las imágenes salían
+~5,5% más grandes que su nombre. En los tamaños chicos da igual; en 100 MB cruza
+el tope de subida y **las 20 celdas de esa fila habrían devuelto 413 en lugar de
+una medición**. El número no habría dicho nada del sistema: solo que el generador
+se pasó. Es el mismo tipo de error que el de la alerta de 6.4 —un instrumento que
+mide su propio defecto y lo reporta como propiedad de lo medido—. El generador
+quedó corregido: encoda, mide y reduce el lado hasta entrar (converge en dos
+vueltas, al 97–98% del objetivo).
+
+#### Lo que muestran las 54 celdas medidas
+
+**1. Por debajo de 1 MB, el tamaño es invisible.** A `VC=1` el p95 es
+0,52 s para 1 KB, 10 KB y 100 KB, y 0,58 s para 1 MB: cien veces más bytes no
+mueven la aguja. La razón es que el piso de la medición no lo pone el sistema
+sino el **intervalo de polling de 0,5 s** con que el cliente pregunta si el job
+terminó. Todo lo que el pipeline tarde por debajo de medio segundo queda tapado.
+El tamaño recién asoma a 1 MB y bajo concurrencia: con `V3=1` y `VC=50`, el p95
+pasa de 3,4–5,1 s en los tres tamaños chicos a **12,3 s en 1 MB**. Dicho de otro
+modo: en este rango el costo no está en mover bytes, está en el camino del
+fragmento (Redis, cola, joiner), que es lo mismo que concluye 8.3.
+
+**2. La concurrencia tiene una rodilla clara, y está antes de `VC=50`.** El
+throughput HTTP crece casi lineal con `VC` (3,9 → 16,4 → 33 → 61 → 96 req/s con
+`V3=1`), pero ese número incluye los GET de polling. Mirando **jobs completados
+por segundo**, que es lo que de verdad produce el sistema:
+
+| V1 | VC=1 | VC=5 | VC=10 | VC=25 | VC=50 |
+|---|---|---|---|---|---|
+| 1 KB | 2,5 | 11,7 | 24,2 | **31,1** | 24,4 |
+| 10 KB | 2,5 | 12,2 | 24,4 | **34,2** | 28,8 |
+| 100 KB | 2,5 | 12,2 | 23,9 | **30,6** | 22,4 |
+| 1 MB | 2,3 | 9,2 | **12,8** | 7,8 | 9,6 |
+
+(jobs/s con `V3=1`, dividiendo los jobs completados por la meseta de 20 s)
+
+El máximo está en `VC=25` para los tamaños chicos y en `VC=10` para 1 MB; pasada
+la rodilla **el throughput baja y la latencia sube al mismo tiempo**. Eso es
+saturación, no falta de capacidad de admisión: el backend sigue aceptando con un
+p95 HTTP de milisegundos, y la cola absorbe el exceso. Es el desacoplamiento
+funcionando y, a la vez, la evidencia de que agregar usuarios después de la
+rodilla no compra nada.
+
+**3. Más workers empeoraron las cosas.** Es el resultado contraintuitivo de la
+tabla y el más interesante:
+
+| V1, VC | V3=1 | V3=2 | V3=4 |
+|---|---|---|---|
+| 1 KB, VC=10 | 0,54 s | 0,70 s | 1,12 s |
+| 100 KB, VC=10 | 0,54 s | 0,56 s | 3,32 s |
+| 10 KB, VC=25 | 1,07 s | 1,56 s | 5,53 s |
+| 1 MB, VC=1 | 0,58 s | 0,56 s | 1,36 s |
+
+(p95 end-to-end)
+
+Subir de 1 a 4 workers no agregó capacidad: agregó **contención**. Los workers no
+corren en nodos separados, corren como contenedores en la misma máquina que el
+backend, RabbitMQ, Redis, split, joiner y el propio k6, y compiten por los mismos
+núcleos y la misma memoria. `V3` no escala horizontalmente acá; antiescala.
+
+**Hay que leer el `V3=4` con reserva.** Esa columna se midió mientras la máquina
+se estaba quedando sin memoria —la pasada murió poco después, en la celda 56—,
+así que parte de la degradación puede ser el equipo agonizando y no contención de
+workers. La comparación limpia es `V3=1` contra `V3=2`, que ya apunta en la misma
+dirección aunque con magnitud mucho menor. La conclusión defendible es la
+dirección, no el factor.
+
+Esto es exactamente lo que vuelve caro el hueco declarado en 6.3. Escalar
+horizontalmente exige agregar **nodos**, no procesos en un nodo, y los paneles 1
+a 4 del dashboard —CPU y memoria por pod y por nodo— son los que mostrarían si
+cada worker nuevo encuentra núcleos libres o se los pelea con sus pares. En
+docker-compose esos paneles están vacíos porque sus métricas vienen de cAdvisor y
+node-exporter, que solo existen en Kubernetes. La tabla del Hit #3 muestra el
+síntoma; el instrumento que explicaría la causa es justo el que falta. Con los
+nodepools `infra` y `apps` del cluster de GKE, `V3=8` es una pregunta que tiene
+sentido hacer; en una notebook, no.
+
+**4. El sistema nunca falló: solo se puso lento.** En las 54 celdas medidas hay
+**0 errores, 0 timeouts y 0 fragmentos en DLQ**, y **53 de 54 cumplen el SLO**.
+La única que no lo cumple es `V1=1MB, V3=1, VC=50`, con un p95 de 12,3 s contra
+el umbral de 10 s —y aun ahí la tasa de error es 0: los jobs terminaron bien,
+tarde—. Es el comportamiento que se espera de un pipeline con cola por delante:
+bajo sobrecarga degrada la latencia en vez de rechazar trabajo. La contracara,
+que ya se ve en R5 8.4, es que degradar en silencio es cómodo para el cliente y
+peligroso para el operador: sin la alerta de cola de 6.4, un sistema en este
+estado parece sano desde afuera.
 
 ## 9. Marco conceptual
 

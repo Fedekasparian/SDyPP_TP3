@@ -54,7 +54,14 @@ CLAVE = ("V1", "V3", "VA", "VB", "VC")
 
 
 def leer_declaradas():
-    """celdas_declaradas.csv -> {(V1,V3,VA,VB,VC): motivo}."""
+    """celdas_declaradas.csv -> {(V1,V3,VA,VB,VC): motivo} de ESTA matriz.
+
+    La columna `matriz` es opcional y vale "r5" cuando falta, para que sigan
+    siendo validas las filas escritas antes de que existiera la tabla del Hit #3.
+    El filtro hace falta porque las dos matrices COMPARTEN CLAVES: por ejemplo
+    (V1=10KB, V3=2, VA=1, VB=1, VC=1) es una celda de R5 y tambien una del
+    Hit #3. Sin filtrar, declarar una de las dos declararia la otra sin querer.
+    """
     f = base_dir / "celdas_declaradas.csv"
     if not f.exists():
         return {}
@@ -63,6 +70,7 @@ def leer_declaradas():
     return {
         tuple(fila[c] for c in CLAVE): fila["motivo"]
         for fila in csv.DictReader(lineas)
+        if (fila.get("matriz") or "r5") == MATRIX
     }
 
 
@@ -147,14 +155,18 @@ for v3 in esperadas["V3"]:
 
 res_dir.mkdir(exist_ok=True)
 cols = list(rows[0])
-with open(res_dir / "summary.csv", "w", newline="", encoding="utf-8") as fh:
+# Una salida por matriz. R5 conserva el nombre sin sufijo porque el informe ya
+# cita results/summary.md; si las dos escribieran ahi, correr el Hit #3 borraria
+# la tabla de R5 y la cita del informe apuntaria a otra tabla.
+sufijo = "" if MATRIX == "r5" else f"_{MATRIX}"
+with open(res_dir / f"summary{sufijo}.csv", "w", newline="", encoding="utf-8") as fh:
     w = csv.DictWriter(fh, fieldnames=cols)
     w.writeheader()
     w.writerows(rows)
 
 md = ["| " + " | ".join(cols) + " |", "|" + "---|" * len(cols)]
 md += ["| " + " | ".join(str(r[c]) for c in cols) + " |" for r in rows]
-(res_dir / "summary.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+(res_dir / f"summary{sufijo}.md").write_text("\n".join(md) + "\n", encoding="utf-8")
 
 total = len(rows)
 print(f"matriz {MATRIX}: {total} celdas esperadas | {n_medidas} medidas | "

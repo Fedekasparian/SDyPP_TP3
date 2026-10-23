@@ -35,11 +35,15 @@ logs/
 # ...salvo los logs de evidencia: son entregables del Hit #4 y de R5.
 !TP3/evidencia/**/*.log
 TP3/loadtest/results/
-# ...pero summary.md y summary.csv SI van: son la tabla de R5 que cita el informe.
+# ...pero los summary SI van: son las tablas que cita el informe (R5 sin sufijo,
+# Hit #3 con sufijo _hit3). Sin estas excepciones la tabla del Hit #3 nunca
+# llega al repo y el informe cita un archivo que no existe.
 !TP3/loadtest/results/
 TP3/loadtest/results/*
 !TP3/loadtest/results/summary.md
 !TP3/loadtest/results/summary.csv
+!TP3/loadtest/results/summary_hit3.md
+!TP3/loadtest/results/summary_hit3.csv
 TP3/loadtest/images/
 
 # IDE / SO
