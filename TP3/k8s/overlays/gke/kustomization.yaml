@@ -6,6 +6,7 @@ kind: Kustomization
 namespace: tp3
 resources:
   - ../../base
+  - backendconfig.yaml
 images:
   - { name: tp3/backend, newName: REGION-docker.pkg.dev/PROJECT/tp3/backend, newTag: latest }
   - { name: tp3/split, newName: REGION-docker.pkg.dev/PROJECT/tp3/split, newTag: latest }
@@ -24,3 +25,9 @@ patches:
       - op: add
         path: /metadata/annotations
         value: { kubernetes.io/ingress.class: gce }
+  # El balanceador corta a los 30 s por defecto; el stream SSE dura ~55 s (BackendConfig)
+  - target: { kind: Service, name: frontend }
+    patch: |-
+      - op: add
+        path: /metadata/annotations
+        value: { cloud.google.com/backend-config: '{"default":"tp3-frontend"}' }
