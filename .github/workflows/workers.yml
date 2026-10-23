@@ -40,6 +40,16 @@ jobs:
       run: { working-directory: TP3/infra/terraform/workers }
     steps:
       - uses: actions/checkout@v4
+      - name: Require explicit worker count for automatic apply
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          DESIRED_WORKER_COUNT: ${{ vars.WORKER_COUNT }}
+        run: |
+          if [[ ! "$DESIRED_WORKER_COUNT" =~ ^[0-9]+$ ]]; then
+            echo "::error::Configure WORKER_COUNT explicitly before automatic apply (0 destroys existing worker VMs)."
+            exit 1
+          fi
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}

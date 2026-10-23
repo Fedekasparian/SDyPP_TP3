@@ -1,6 +1,7 @@
 # Bootstrap: se corre UNA vez a mano (crea el bucket del remote state, el registry,
 # las service accounts y la federacion OIDC para GitHub Actions).
 #
+#   # Primera ejecucion sin bucket: comentar temporalmente backend "gcs".
 #   terraform init && terraform apply -var project_id=<id>
 #   # Despues de crear el bucket, migrar este mismo state al bucket:
 #   #   descomentar el backend "gcs" de abajo y correr:
@@ -12,7 +13,7 @@ terraform {
   }
   backend "gcs" {
     prefix = "bootstrap"
-   }
+  }
 }
 
 provider "google" {
