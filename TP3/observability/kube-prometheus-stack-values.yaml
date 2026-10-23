@@ -10,14 +10,19 @@ kube-state-metrics: *infra
 alertmanager:
   alertmanagerSpec: *infra
 prometheus:
+  # Con Workload Identity el pod no ve el SA del nodo: la KSA de Prometheus se mapea a
+  # tp3-gke-nodes (compute.viewer) con el binding de infra/terraform/bootstrap/main.tf.
+  serviceAccount:
+    annotations:
+      iam.gke.io/gcp-service-account: tp3-gke-nodes@PROJECT.iam.gserviceaccount.com
   prometheusSpec:
     <<: *infra
     retention: 3d
     # Levanta ServiceMonitors/PrometheusRules de cualquier namespace sin exigir labels del chart
     serviceMonitorSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
-    # TODO (D): scrape de las VMs workers (fuera del cluster) por GCE service discovery.
-    # Requiere que el SA de nodos tenga roles/compute.viewer.
+    # Scrape de las VMs workers (fuera del cluster) por GCE service discovery.
+    # deploy.yml reemplaza PROJECT por vars.GCP_PROJECT antes del helm upgrade.
     additionalScrapeConfigs:
       - job_name: tp3-vm-workers
         gce_sd_configs:

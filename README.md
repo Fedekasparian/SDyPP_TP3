@@ -34,10 +34,10 @@ docker-compose.yml       stack completo local
 ## Reparto
 | Integrante | Frente | Entregables |
 |---|---|---|
-| **A** | Mensajería y cómputo | Hit #0 (ex1 a ex5), Hit #1 (etapas 1 a 3, demo de fallos), worker, operaciones |
-| **B** | Plataforma de aplicación | backend, split, joiner, dlq-monitor, R2, R3 ([contrato](TP3/docs/contrato.md)), R4 (script de evidencia), tests de integración |
-| **C** | Infraestructura y CI/CD | Terraform (bootstrap, gke, workers), Hit #2 (diagrama híbrido), pipelines, R1 ([evidencia](TP3/docs/r1-evidencia.md)), deploy en GKE |
-| **D** | Observabilidad, carga y docs | Hit #4, matriz R5 y tabla del Hit #3, [informe](TP3/docs/informe.md), video |
+| **A** (Federico Kasparian) | Mensajería y cómputo | Hit #0 (ex1 a ex5), Hit #1 (etapas 1 a 3, demo de fallos), worker, operaciones |
+| **B** (Justino Bernal) | Plataforma de aplicación | backend, split, joiner, dlq-monitor, R2, R3 ([contrato](TP3/docs/contrato.md)), R4 (script de evidencia), tests de integración |
+| **C** (Mateo Ponti) | Infraestructura y CI/CD | Terraform (bootstrap, gke, workers), Hit #2 (diagrama híbrido), pipelines, R1 ([evidencia](TP3/docs/r1-evidencia.md)), deploy en GKE |
+| **D** (Agustina Ortiz) | Observabilidad, carga y docs | Hit #4, matriz R5 y tabla del Hit #3, [informe](TP3/docs/informe.md), video |
 
 **Reglas:** una rama por frente (`feat/hit0`, `feat/backend`, `feat/infra`, `feat/obs`) y PRs chicos a `main`. El CI (gitleaks y tests) tiene que pasar. Los cambios en `TP3/services/common` (los contratos) se avisan a los 4.
 
@@ -47,12 +47,14 @@ docker-compose.yml       stack completo local
 - Validación R2 antes de encolar, roles y aislamiento R4 (el script pasa los 5 casos), `/stats`, DLQ con reintentos y estacionamiento, y reprocesamiento por el admin.
 - Health-checks JSON, logs en memoria, stdout y archivo, y métricas Prometheus.
 - Suite de pruebas unitarias e integración real con Redis/RabbitMQ en CI. Progreso SSE, panel admin y evidencia R4 con tres backends locales: [parte B](TP3/docs/parte-b.md).
-- k6 probado contra el compose y Terraform validado (`terraform validate`) según la base del proyecto.
+- Infraestructura aplicada en GCP: el pipeline `deploy` despliega en GKE en cada push a `main` y `workers` crea las VMs. Evidencia R1 en [r1-evidencia.md](TP3/docs/r1-evidencia.md).
+- Hit #4 en local (capturas de Grafana y alertas disparadas), matriz R5 (108 celdas) y tabla del Hit #3 (120 celdas): [informe](TP3/docs/informe.md), secciones 6 y 8.
+- Guion de la demo y el video: [guion-video.md](TP3/docs/guion-video.md).
 
 **Falta:**
-- Ejecutar evidencia R4 en GKE después del despliegue del frente C. La corrida local registrada usa Docker Compose.
-- Aplicar la infraestructura en GCP y cargar las GitHub Variables ([infra/README.md](TP3/infra/README.md)), y la evidencia de R1.
-- Observabilidad en GKE, la matriz R5 completa, el informe y el video.
+- Evidencia R4 en GKE (`K8S=1 bash TP3/scripts/r4_evidence.sh` → `TP3/evidencia/r4_gke.txt`). La corrida registrada es en Docker Compose.
+- Capturas de CPU y memoria por pod y por nodo de Grafana en GKE, y el `terraform apply` del bootstrap para el binding de Prometheus.
+- Validar la conexión VM → RabbitMQ local del esquema híbrido (Hit #2).
 
 ## Seguridad
 - `.env`, `*.tfstate`, `*.tfvars` y las claves están en `.gitignore`. **gitleaks** corre en cada push y PR, y falla si detecta un secreto.

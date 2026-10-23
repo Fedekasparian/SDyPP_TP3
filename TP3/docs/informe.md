@@ -1,26 +1,142 @@
 # Informe TP3: Kubernetes, RabbitMQ y Cloud Computing
 
-**SDyPP 2026, UNLu.** Integrantes: _(completar)_
+**SDyPP 2026, UNLu.** Integrantes: Federico Kasparian, Justino Bernal, Agustina Ortiz y Mateo Ponti.
 **Responsable de la integración del informe: D** (cada integrante escribe su sección)
 
+| Frente | Integrante | Alcance |
+|---|---|---|
+| A | Federico Kasparian | Hit #0 (ex1 a ex5), Hit #1 (etapas 1 a 3), base del proyecto |
+| B | Justino Bernal | backend, split, joiner, dlq-monitor, frontend, R2, R3, R4, tests de integración |
+| C | Mateo Ponti | Terraform, GKE, VMs workers, pipelines, Hit #2, R1 |
+| D | Agustina Ortiz | Hit #4, matriz R5, tabla del Hit #3, informe |
+
 ## 1. Introducción y arquitectura
-Ver [arquitectura.md](arquitectura.md). _(resumen)_
+
+El sistema es una plataforma asincrónica de procesamiento de imágenes (Sobel,
+escala de grises, blur y umbral, encadenables) con el patrón **master-worker**
+sobre RabbitMQ. El diagrama completo y las decisiones están en
+[arquitectura.md](arquitectura.md). El recorrido de un job es:
+
+1. El **backend** (FastAPI, sin estado, 3 réplicas) valida el pedido *antes* de
+   encolar (R2), guarda los archivos y el estado en Redis y publica el `job_id`
+   en `split.requests`. Responde 202 de inmediato.
+2. El **split** (master) parte cada imagen en franjas horizontales con
+   solapamiento, las guarda en Redis y publica un mensaje chico por franja en
+   `tasks.tp3-worker`.
+3. Los **workers** compiten por esa cola (`prefetch=1`, ack manual), aplican la
+   cadena de operaciones y avisan por el exchange fanout `results`.
+4. El **joiner** recorta el solapamiento, une las franjas y marca el job `done`.
+   El **dlq-monitor** escucha el mismo fanout para el progreso en vivo (SSE) y
+   reasigna lo que cae en la DLQ.
+
+Por el broker solo viajan referencias: los bytes van por Redis. Así un archivo
+de 100 MB no se convierte en un mensaje de 100 MB en RabbitMQ.
 
 ## 2. Hit #0: patrones de mensajería (A)
-_(resumen de ex1 a ex5 y lecciones aprendidas)_
+
+Cada patrón tiene código con pika, manifiestos de Kubernetes y un README con la
+salida observada ([TP3/queue](../queue/)). `bash TP3/queue/run_demo.sh all`
+reproduce las cuatro demos con un RabbitMQ aislado.
+
+| Ej. | Patrón | Qué se observó |
+|---|---|---|
+| [ex1](../queue/ex1/) | Cola punto a punto | Con el prefetch por defecto el reparto es round-robin estricto (5 y 5) aunque un consumidor sea 10 veces más lento. Con `prefetch=1` pasa a *fair dispatch*: el rápido procesó 9 de 10. |
+| [ex2](../queue/ex2/) | Pub/Sub (fanout) | Los 3 nodos reciben los mismos 5 bloques en el mismo orden (mismo digest). Un nodo que se suscribe tarde **no** recibe lo anterior: el exchange no retiene. |
+| [ex3](../queue/ex3/) | Dead Letter Queue | Los 3 mensajes con `"error": true` terminan en `ex3.dlq` con `reason=rejected` y los 7 restantes se procesan. |
+| [ex4](../queue/ex4/) | Retry con backoff | Esperas de 1, 2, 4 y 8 s con una cola de espera por nivel (TTL fijo + DLX). Al 5.º fallo el mensaje va a la DLQ de ex3. |
+| [ex5](../queue/ex5/) | Comparación | Diagramas, garantías, cuándo usar cada uno y equivalentes gestionados (SQS, SNS/EventBridge, Pub/Sub, Kafka). |
+
+**Lecciones que se trasladaron a la aplicación:**
+- `prefetch=1` es lo que hace que agregar workers sume throughput real: sin él,
+  un worker lento acumula mensajes que otro podría estar procesando.
+- En ex4 se usa una cola por nivel de espera porque RabbitMQ solo expira el
+  mensaje de la **cabeza** de la cola: con una sola cola, uno de 8 s retiene
+  a uno de 1 s.
+- La app usa los cuatro patrones a la vez: `tasks.<pool>` (cola), `results`
+  (fanout), `tasks.dlx` → `tasks.dlq` (DLQ) y el dlq-monitor reencolando con
+  `attempt+1` (retry).
 
 ## 3. Hit #1: Sobel centralizado, distribuido y tolerante a fallos (A)
-- Tiempos de la etapa 1 frente a la etapa 2 según la cantidad de workers.
-- Demo de tolerancia a fallos.
+
+Detalle y comandos en [hit1/README.md](../hit1/README.md). La misma función
+de Sobel ([ops.py](../services/common/tp3common/ops.py)) se usa en las tres
+etapas, así que las diferencias de tiempo son de arquitectura y no de algoritmo.
+
+**Etapa 1 contra etapa 2 (imagen de 10 MB, `ops=sobel`, mediana de 3 corridas):**
+
+| Variante | Total | Comentario |
+|---|---|---|
+| Centralizado, 1 proceso | 0,65 s | Sobel en sí es 0,16 s; el resto es decodificar y codificar PNG |
+| Distribuido, 1 worker | 1,93 s | split + colas + join |
+| Distribuido, 2 workers | 2,17 s | |
+| Distribuido, 4 workers | 1,58 s | `processing` baja de ~0,73 s a ~0,45 s |
+
+La etapa de procesamiento escala con los workers, pero el total distribuido es
+**peor** que el centralizado para 10 MB: partir, unir y mover la imagen por
+Redis cuesta más que el Sobel. Sobel es barato por píxel, así que esa
+granularidad no amortiza la comunicación (relación cómputo/comunicación,
+Foster). Distribuir conviene con imágenes grandes (a 100 MB el Sobel solo ya
+tarda 3 s), cadenas largas de operaciones o muchos jobs concurrentes, donde la
+ganancia es de throughput. La sección 8 lo confirma bajo carga.
+
+**Etapa 3, tolerancia a fallos.** Ack manual con `prefetch=1`, heartbeat AMQP,
+colas quorum con `x-delivery-limit`, dlq-monitor con reintentos y estacionamiento,
+y un joiner idempotente. En la demo (`bench_distribuido.sh fallas`) se mata con
+`SIGKILL` un worker que tenía el fragmento `0-0`. RabbitMQ se lo reentrega al
+otro worker (`reentregado` en el log), y el job termina `done` con 4/4 fragmentos
+y unos 0,8 s más de latencia. La reasignación la hace siempre RabbitMQ, que es
+quien tiene el mensaje sin ack. El heartbeat en Redis sirve para observar y
+alertar, no para reasignar, y así se evitan carreras con un worker lento que
+seguía vivo.
 
 ## 4. Hit #2: offloading en la nube (C)
-- Ciclo provisioning → bootstrap → deploy → join → teardown, con logs y capturas.
-- Arquitectura híbrida y justificación local o nube.
-- Remote state y pipeline plan/apply.
+
+Detalle en [hit2/README.md](../hit2/README.md) e [infra/README.md](../infra/README.md).
+
+**Ciclo de vida de los workers en GCP** ([terraform/workers](../infra/terraform/workers/)):
+
+| Paso | Implementación |
+|---|---|
+| Provisioning | `google_compute_instance` con `count = var.worker_count`, repartidas en tres zonas por las cuotas del free trial |
+| Bootstrap | `startup-script` que instala Docker ([startup.sh.tftpl](../infra/terraform/workers/startup.sh.tftpl)) |
+| Deploy | `docker pull` del Artifact Registry privado con el SA de la VM, sin claves |
+| Join | `docker run` del worker, que se conecta a RabbitMQ y Redis con retry y backoff |
+| Teardown | `worker_count=0` o `terraform destroy` desde el pipeline `workers.yml` |
+
+**Arquitectura híbrida.** Frontend, backend, split, joiner, RabbitMQ, Redis y
+los workers base quedan locales: son la entrada y el punto de coordinación, y
+llevarlos a la nube haría que cada mensaje cruzara Internet. Solo los workers
+**extra** se desbordan a VMs spot (cloud-bursting): se crean cuando la capacidad
+local no alcanza y se destruyen al terminar, así que se paga solo el tiempo de
+uso. Las imágenes y los secretos viven en Artifact Registry y Secret Manager.
+El punto delicado es la ruta de red de la VM al equipo local (VPN, túnel o
+port-forward restringido). No se debe exponer Redis sin password ni AMQP a
+todo Internet.
+
+**IaC y pipelines.** El estado de Terraform está en un bucket GCS con lock
+nativo (bootstrap). `infra.yml` hace `plan` en cada PR y `apply` al mergear.
+GitHub Actions se autentica con GCP por OIDC (Workload Identity Federation), sin
+claves JSON.
 
 ## 5. Hit #3: plataforma en GKE (B y C)
-- Nodepools, workers fuera del cluster, DLQ, retry y fanout.
-- Pipelines 1.1 a 1.N y pipeline 2.
+
+Todo pasa a la nube ([hit3/README.md](../hit3/README.md)):
+
+- **Nodepools.** RabbitMQ, Redis y la observabilidad corren en el pool `infra`
+  (con taint `pool=infra`). Frontend, backend (3 réplicas), split, joiner y
+  dlq-monitor van en el pool `apps`.
+- **Workers fuera del cluster.** Son VMs creadas con Terraform que llegan a
+  RabbitMQ y Redis por `LoadBalancer` internos del VPC, sin exponerlos a Internet.
+- **Mensajería.** Colas quorum con DLX `tasks.dlx` y `x-delivery-limit`, retry
+  de conexiones con backoff de 1, 2, 4, 8 y 16 s (tope 30 s) y el fanout
+  `results` hacia joiner y monitor.
+- **Pipelines.** `deploy.yml` corre al terminar bien el CI en `main`. El job
+  1.1 (`base-services`) crea los Secrets desde Secret Manager y despliega
+  RabbitMQ y Redis. Los jobs 1.2..N despliegan una app cada uno (matrix) con la
+  imagen del commit. La observabilidad es un job aparte que no frena a las apps.
+  `workers.yml` (pipeline 2) crea o destruye las VMs.
+- El balanceador de GKE usa un `BackendConfig` con timeout extendido para que
+  no corte el stream SSE de progreso.
 
 El análisis de desempeño de este hit (la tabla V1 × V2 × V3) es de D y
 está en la sección 8.6 de este informe.
@@ -422,9 +538,27 @@ absorbe una tasa de fallo de fragmento del 30% y la convierte en algo cercano al
 kill worker` mata *todas* las réplicas, y además corrió sin carga en vuelo, así
 que lo único que registra es el kill. Para que sea evidencia de reasignación hay
 que matar **un** worker mientras otros procesan y mostrar los fragmentos
-reentregados (`redelivered=True`, que el worker registra como `reentregado`). El
-mecanismo en sí está verificado en el Hit #1, etapa 3; falta reproducirlo bajo la
-carga de R5.
+reentregados (`redelivered=True`, que el worker registra como `reentregado`).
+
+Eso se hizo en una corrida aparte, con evidencia en
+[`evidencia/r5/caso_c_worker_muerto.txt`](../evidencia/r5/caso_c_worker_muerto.txt).
+Corrieron 3 workers bajo carga continua: 4 clientes en paralelo, cada uno con 10
+archivos de 1 MB por job y `blur,blur,sobel`. El script esperó a que RabbitMQ
+mostrara un canal consumidor con un mensaje **sin ack**, identificó el contenedor
+por la IP de su conexión AMQP y lo mató con `SIGKILL`. Dos segundos después,
+`worker-2` procesó ese mismo fragmento (`frag=2-2 ... reentregado`). Es la
+reasignación que se buscaba, sin que intervenga ningún componente propio:
+RabbitMQ ve caer la conexión y reentrega lo que no tenía ack.
+
+Dos salvedades. Primero, matar un worker "a los 25 s" sin verificar que tuviera
+un fragmento en vuelo dio **cero** reentregas en dos intentos (con 45 y 41 jobs
+`done` y 0 errores), porque no había nada sin ack en ese instante. Con
+`prefetch=1` y fragmentos de 25 ms, un worker pasa poco tiempo "con algo en la
+mano", y la prueba tiene que buscar ese momento en lugar de suponerlo. Segundo,
+esta carga generó más trabajo del que drenan dos workers y durante la corrida
+aparecieron **4 jobs `failed`**. No se pudo establecer la causa: al esperar a
+que la cola se vaciara, Docker Desktop dejó de responder por la presión de
+memoria del equipo, la misma limitación de la sección 8.5.
 
 ### 8.5 Límites del entorno y celdas no medidas
 
@@ -725,9 +859,9 @@ paso natural si el sistema fuera a producción.
 | Integrante | Herramienta | Para qué la usó | Qué hubo que corregir |
 |---|---|---|---|
 | D (Agustina) | Claude Code | Correr la matriz R5, armar la evidencia del Hit #4 y redactar las secciones 6, 8, 9 y 11. | Ver el detalle abajo: tres errores de fondo en el andamiaje generado, encontrados al ejecutarlo. |
-| A | _(completar)_ | | |
-| B | _(completar)_ | | |
-| C | _(completar)_ | | |
+| A (Federico) | Claude Code | Generar la base del proyecto (servicios, Terraform, manifiestos, CI/CD), los ejemplos del Hit #0 y el Hit #1, y en el cierre auditar qué faltaba, correr el caso c de R5 y redactar las secciones 1 a 5. | Los primeros intentos del caso c (sección 8.4) no demostraban nada: matar un worker "a los 25 s" no garantiza que tenga un fragmento en vuelo, y en dos corridas no lo tenía (cero reentregas). Se cambió el método: se le pregunta a RabbitMQ qué conexión tiene un mensaje sin ack y se mata ese contenedor. |
+| B (Justino) | _(completar)_ | | |
+| C (Mateo) | GitHub Copilot | Workflows de infraestructura y deploy, scripts locales y de evidencia R1, y la documentación del Hit #2 (commit `11481e0`, coautoría de Copilot). | _(completar)_ |
 
 ### 10.1 Qué falló del código generado y cómo se detectó
 
