@@ -3,7 +3,7 @@
 Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 **Git Bash en Windows**, desde la raíz del repo.
 
-## Estado al 22/10/2026
+## Estado al 23/10/2026 (día de la entrega)
 
 | | |
 |---|---|
@@ -11,14 +11,41 @@ Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 | ✅ | Métricas de RabbitMQ **por cola** y las 4 alertas en formato nativo, validadas |
 | ✅ | `run_matrix.sh` arreglado y endurecido (ver "Qué se arregló") |
 | ✅ | `summarize.py` reescrito: emite **siempre** las 108 filas esperadas |
-| ✅ | 4 capturas de Grafana en `evidencia/hit4/` + `contexto_capturas.txt` |
-| ✅ | Informe: §6 (salvo 6.4), §8 (salvo 8.4), §9, §10 y §11 escritas |
-| 🔄 | Matriz R5 |
-| ⬜ | Paso 8: alerta disparada y casos de falla → `scripts/evidencia_hit4_r5.sh` |
-| ⬜ | Capturas de los paneles de errores y latencia de worker |
+| ✅ | **Matriz R5 cerrada: 79 medidas + 29 declaradas = 108, ninguna `SIN MEDIR`** |
+| ✅ | 6 capturas de Grafana en `evidencia/hit4/` + `contexto_capturas.txt` |
+| ✅ | Paso 8: `ColaDeTareasAlta` y `FragmentosEstacionadosEnDLQ` disparadas y registradas |
+| ✅ | Caso de DLQ completo: estacionado → alerta → reproceso → `done` |
+| ✅ | Informe: §6 y §8 completas (6.4 y 8.4 incluidas), §9, §10 y §11 |
+| ⬜ | **Caso c de R5**: matar UN worker con carga en vuelo (ver abajo) |
+| ⬜ | Observabilidad en GKE: el deploy la saltea con `continue-on-error` (ver abajo) |
 | ⬜ | Guion y grabación del video |
 
 **Nada está pusheado.** Los commits los hace D.
+
+### Lo que falta, con el detalle para retomarlo
+
+**1. Caso c de R5 — worker muerto con fragmentos en vuelo.** El paso 8 lo intenta
+pero no lo demuestra: `docker compose kill worker` mata *todas* las réplicas y
+corrió sin carga en vuelo, así que solo registra el kill. Hay que levantar 3
+workers, largar carga liviana (10KB, `VA=10`, `VC=3`, 60 s), matar **un** solo
+contenedor con `docker kill <nombre>` a los ~20 s, y después buscar
+`reentregado` en los logs de los sobrevivientes (el worker lo imprime cuando
+`method.redelivered` es verdadero) y comprobar que los jobs igual terminan.
+Está señalado como pendiente en §8.4 del informe.
+
+**2. Observabilidad en GKE.** El paso "Observabilidad (Hit #4)" de
+`.github/workflows/deploy.yml` tiene `continue-on-error: true` y timeout de 5 min:
+el deploy pasa en verde pero **no instala Prometheus ni Grafana en el cluster**.
+Dos causas, las dos en archivos de D:
+  - `kube-prometheus-stack-values.yaml` pide `admin.existingSecret: grafana-admin`
+    y nadie crea ese secreto; el pod de Grafana queda en `CreateContainerConfigError`
+    y el `helm --wait` timeoutea. Hay que crear el secreto en el workflow y agregar
+    `tp3-grafana-pass` al `for_each` de `infra/terraform/bootstrap/main.tf`.
+  - `additionalScrapeConfigs` tiene `project: PROJECT` literal (el `TODO (D)` del
+    scrape de las VMs workers). No rompe el arranque, pero ese job no descubre nada.
+Arreglado eso se le saca el `continue-on-error` y se le devuelve el `--timeout 15m`.
+Como beneficio, en GKE sí existen cAdvisor y node-exporter, así que se llenarían
+los paneles 1 a 4 que en compose quedan vacíos.
 
 ---
 

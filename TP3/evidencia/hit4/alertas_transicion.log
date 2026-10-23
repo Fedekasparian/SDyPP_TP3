@@ -1,0 +1,14 @@
+# Transicion de alertas reconstruida desde la serie ALERTS de Prometheus.
+# Ventana: 2026-10-23 07:26:19 a 09:56:19  (paso 15s)
+# Consulta: ALERTS   (vale 1 en pending/firing; ausente = inactive)
+# Una alerta que no figura en una linea estaba en inactive en ese instante.
+
+09:38:04  ColaDeTareasAlta                 inactive -> pending
+09:38:04  WorkersSinProcesar               inactive -> pending
+09:39:04  WorkersSinProcesar               pending  -> inactive
+09:40:04  ColaDeTareasAlta                 pending  -> firing
+09:45:04  ColaDeTareasAlta                 firing   -> pending
+09:52:04  ColaDeTareasAlta                 pending  -> inactive
+09:52:04  FragmentosEstacionadosEnDLQ      inactive -> pending
+09:53:04  FragmentosEstacionadosEnDLQ      pending  -> firing
+09:55:04  FragmentosEstacionadosEnDLQ      firing   -> inactive

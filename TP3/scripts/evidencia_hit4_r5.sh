@@ -27,8 +27,14 @@ EV_R5="TP3/evidencia/r5"
 mkdir -p "$EV_HIT4" "$EV_R5"
 
 PY=""
+# Ojo (Windows): existe un `python` que es el stub de la Microsoft Store.
+# `command -v` lo encuentra, pero no ejecuta nada y sale sin imprimir una linea,
+# asi que todas las muestras de alertas salian vacias y el log quedaba en puros
+# "---". Hay que PROBARLO, no solo buscarlo: es lo que ya hace run_matrix.sh.
 for cand in python py python3; do
-  command -v "$cand" >/dev/null 2>&1 && PY="$cand" && break
+  if command -v "$cand" >/dev/null 2>&1 && "$cand" -c "pass" >/dev/null 2>&1; then
+    PY="$cand"; break
+  fi
 done
 [[ -z "$PY" ]] && { echo "no encontre python/py en el PATH"; exit 1; }
 

@@ -2,10 +2,48 @@
 # filas de la tabla, con el motivo en lugar de los numeros, para que el producto
 # cruzado de R5 quede completo y ninguna ausencia pase desapercibida.
 # VB es la cantidad de operaciones encadenadas (1=sobel, 2=blur+sobel, 3=grayscale+blur+sobel).
+#
+# MOTIVO UNICO, medido el 23/10/2026: el limite NO esta en el sistema bajo prueba
+# sino en el generador de carga. k6 ejecuta el contexto de init UNA VEZ POR VU, y
+# ahi se arma el cuerpo multipart con la FormData de la jslib, que concatena los
+# bytes en JavaScript con un pico que es un multiplo grande del payload. Cada VU
+# se queda con su propia copia de PAYLOAD_OK y, como INVALID_RATE=0.05 > 0,
+# tambien de PAYLOAD_INVALIDO. El contenedor muere con exit 137 (OOM) en
+# "00/N VUs initialized", ANTES del primer request, y no escribe el JSON.
+# Evidencia: TP3/evidencia/r5/oom_k6_init.txt
+#
+# No se puede usar el multipart nativo de k6 (que armaria el cuerpo en Go) porque
+# no admite claves repetidas, y el backend espera el campo `files` repetido.
+#
+# Nota: si alguna de estas celdas se llega a medir, summarize.py le da precedencia
+# a la medicion y esta fila queda ignorada (ver summarize.py, "if clave in medidas").
 V1,V3,VA,VB,VC,motivo
-1MB,2,50,1,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
-1MB,2,50,2,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
-1MB,2,50,3,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
-1MB,6,50,1,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
-1MB,6,50,2,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
-1MB,6,50,3,50,no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba
+1MB,2,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,2,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,1,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,1,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,2,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,2,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,3,10,no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,10,3,50,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,1,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,1,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,1,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,2,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,2,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,2,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,3,1,no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,3,10,no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo, una copia por VU)
+1MB,6,50,3,50,no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo, una copia por VU)

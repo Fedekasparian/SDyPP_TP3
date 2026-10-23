@@ -41,7 +41,7 @@ groups:
           description: "Escalar workers (pipeline workers.yml) o revisar si estan caidos."
       - alert: WorkersSinProcesar
         expr: |
-          sum(rate(tasks_processed_total{service="worker"}[2m])) == 0
+          (sum(rate(tasks_processed_total{service="worker"}[2m])) or vector(0)) == 0
           and sum(tasks_queued{queue=~"tasks\\.tp3-.*"}) > 0
         for: 1m
         labels: { severity: critical }

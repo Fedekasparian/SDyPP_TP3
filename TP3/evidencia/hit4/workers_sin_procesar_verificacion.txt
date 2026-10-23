@@ -1,0 +1,68 @@
+###############################################################
+# Verificacion del arreglo de WorkersSinProcesar
+#
+# ANTES: expr = sum(rate(tasks_processed_total{service="worker"}[2m])) == 0
+#   Al apagar los workers desaparecen sus targets de scrape, la serie
+#   queda ausente, y en PromQL sum(rate(<ausente>)) NO da 0: da vector
+#   vacio. '== 0' no matchea nada y la alerta vuelve a inactive justo
+#   cuando deberia disparar. Medido el 23/10: paso a pending 09:38:04 y
+#   volvio a inactive 09:39:04, sin llegar nunca a firing.
+#
+# DESPUES: (sum(rate(...)) or vector(0)) == 0
+#   'or vector(0)' sustituye 0 cuando la serie esta ausente.
+###############################################################
+
+===== 1. Apago los workers (10:06:15)
+ Container sdypp_tp3-worker-2 Stopped 
+ Container sdypp_tp3-worker-1 Stopped 
+
+===== 2. Encolo un job (4 fragmentos) que nadie va a consumir
+{"job_id":"f774b3d6ffca4de0acd0eb76dc3c6010","status":"queued","status_url":"/jobs/f774b3d6ffca4de0acd0eb76dc3c6010"}
+
+===== 3. Profundidad de cola y estado de las alertas cada 20s
+   cola=  rate_workers=
+10:06:21  ColaDeTareasAlta       inactive activas=0
+10:06:21  WorkersSinProcesar     inactive activas=0
+   ---
+   cola=  rate_workers=
+10:06:43  ColaDeTareasAlta       inactive activas=0
+10:06:43  WorkersSinProcesar     inactive activas=0
+   ---
+   cola=  rate_workers=
+10:07:05  ColaDeTareasAlta       inactive activas=0
+10:07:05  WorkersSinProcesar     inactive activas=0
+   ---
+   cola=  rate_workers=
+10:07:27  ColaDeTareasAlta       inactive activas=0
+10:07:27  WorkersSinProcesar     inactive activas=0
+   ---
+   cola=  rate_workers=
+10:07:48  ColaDeTareasAlta       inactive activas=0
+10:07:48  WorkersSinProcesar     inactive activas=0
+   ---
+   cola=  rate_workers=
+10:08:10  ColaDeTareasAlta       inactive activas=0
+10:08:10  WorkersSinProcesar     pending  activas=1
+   ---
+   cola=  rate_workers=
+10:08:31  ColaDeTareasAlta       inactive activas=0
+10:08:31  WorkersSinProcesar     pending  activas=1
+   ---
+   cola=  rate_workers=
+10:08:53  ColaDeTareasAlta       inactive activas=0
+10:08:53  WorkersSinProcesar     firing   activas=1
+   ---
+   cola=  rate_workers=
+10:09:15  ColaDeTareasAlta       inactive activas=0
+10:09:15  WorkersSinProcesar     firing   activas=1
+   ---
+   cola=  rate_workers=
+10:09:37  ColaDeTareasAlta       inactive activas=0
+10:09:37  WorkersSinProcesar     firing   activas=1
+   ---
+
+===== 4. Vuelvo a prender los workers (10:09:58)
+ Container sdypp_tp3-worker-2 Starting 
+ Container sdypp_tp3-worker-2 Started 
+10:10:24  ColaDeTareasAlta       inactive activas=0
+10:10:24  WorkersSinProcesar     firing   activas=1

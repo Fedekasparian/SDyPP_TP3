@@ -1,0 +1,57 @@
+================================================================================
+Por que no se pudieron medir las 29 celdas de V1=1MB con VA alto
+Observado el 23/10/2026 sobre el stack de docker-compose
+================================================================================
+
+QUE SE HIZO
+-----------
+Se corrio UNA celda suelta, fuera de run_matrix.sh, para ver el error completo
+(dentro del script la salida de k6 quedaba tapada por el filtro de log):
+
+  cd TP3/loadtest
+  MSYS_NO_PATHCONV=1 docker run --rm \
+    --network sdypp_tp3_default --memory=3g \
+    -v "$(pwd):/lt" -w /lt grafana/k6:0.54.0 run --quiet \
+    --summary-export results/DIAG.json \
+    -e BASE_URL=http://backend:8000 -e ADMIN_TOKEN="$ADMIN_TOKEN" \
+    -e IMAGE=../images/1MB.png -e VA=10 -e OPS=sobel -e VC=10 \
+    -e DURATION=10s -e RAMP=3s -e INVALID_RATE=0.05 -e TIMEOUT_S=30 \
+    k6/job.js
+
+QUE PASO
+--------
+Codigo de salida del contenedor: 137  (= 128 + 9, o sea SIGKILL: lo mato el OOM
+killer al tocar el techo de --memory).
+
+La ultima salida de k6 antes de morir, repetida hasta el final:
+
+    scenarios: (100.00%) 2 scenarios, 11 max VUs, 48s max duration
+
+    Init            [   0% ] 00/11 VUs initialized
+    bot_sin_token   [   0% ]
+    users           [   0% ]
+
+No se escribio results/DIAG.json.
+
+LECTURA
+-------
+Murio en "00/11 VUs initialized": ni un solo usuario virtual llego a
+inicializarse, y por lo tanto NO se emitio ningun request. El sistema bajo
+prueba (backend, RabbitMQ, Redis, workers) nunca participo de esta falla.
+
+El costo esta en el contexto de init de k6, que se ejecuta UNA VEZ POR VU. Ahi
+job.js arma el cuerpo multipart con la FormData de la jslib, que concatena los
+bytes en JavaScript; el pico de memoria es un multiplo grande del payload final.
+Con VA=10 y V1=1MB son ~10 MB de cuerpo por copia, y cada uno de los 11 VUs se
+queda con PAYLOAD_OK y ademas con PAYLOAD_INVALIDO (porque INVALID_RATE=0.05 > 0).
+
+Con --memory=4g el contenedor tampoco termino: la maquina entera quedo sin
+memoria disponible y el proceso fue interrumpido por presion de memoria del
+sistema operativo, sin escribir el JSON.
+
+COMO REPRODUCIRLO
+-----------------
+El comando de arriba, tal cual. Para ver el momento exacto de la muerte conviene
+guardar la salida a archivo (> salida.txt 2>&1) y mirar el codigo de salida:
+un 137 es OOM; cualquier celda que termine con 137 queda SIN MEDIR y
+summarize.py la reporta como tal.

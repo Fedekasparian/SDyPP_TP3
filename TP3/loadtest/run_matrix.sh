@@ -234,12 +234,12 @@ for v3 in $V3_LIST; do
         for vc in $VC_LIST; do
           i=$((i + 1))
           cell="${CELL_PREFIX}_V1-${v1}_V3-${v3}_VA-${va}_VB-${nb}_VC-${vc}"
+          # Ya medida: se saltea SIN tocar su .meta. Reescribirlo con el
+          # DURATION de ESTA corrida diria que se midio con esta meseta, y es
+          # mentira: se midio con la de la corrida que la genero.
           if [[ -f "results/$cell.json" ]]; then
-            {
-              echo "DURATION=$DURATION"
-              echo "RAMP=$RAMP"
-              echo "JOB_TIMEOUT_S=$JOB_TIMEOUT_S"
-            } > "results/$cell.meta"
+            echo "[$i/$ncells] --> $cell (ya medida, la salteo)"
+            continue
           fi
           echo "[$i/$ncells] ==> $cell"
           # IMAGE es relativa al .js (k6/), no a loadtest/: de ahi el ../
@@ -252,10 +252,11 @@ for v3 in $V3_LIST; do
           # medida con meseta corta es indistinguible de una medida con la
           # meseta normal, y la tabla de R5 diria algo que no es.
           if [[ -f "results/$cell.json" ]]; then
-            printf 'DURATION=%s
-RAMP=%s
-JOB_TIMEOUT_S=%s
-' \n              "$DURATION" "$RAMP" "$JOB_TIMEOUT_S" > "results/$cell.meta"
+            {
+              echo "DURATION=$DURATION"
+              echo "RAMP=$RAMP"
+              echo "JOB_TIMEOUT_S=$JOB_TIMEOUT_S"
+            } > "results/$cell.meta"
           fi
         done
       done

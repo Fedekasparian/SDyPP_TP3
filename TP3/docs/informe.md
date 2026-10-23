@@ -106,9 +106,81 @@ cluster, sin cambiarle nada.
 
 ### 6.4 La alerta disparada
 
-_(pendiente: capturas y registro de la transición `inactive -> pending -> firing`,
-que produce `scripts/evidencia_hit4_r5.sh` en
-`evidencia/hit4/alertas_transicion.log`.)_
+El registro completo está en
+[`evidencia/hit4/alertas_transicion.log`](../evidencia/hit4/alertas_transicion.log).
+Dos de las cuatro alertas recorrieron el ciclo entero el 23/10/2026:
+
+| Hora | Alerta | Transición |
+|---|---|---|
+| 09:38:04 | `ColaDeTareasAlta` | `inactive → pending` |
+| **09:40:04** | `ColaDeTareasAlta` | **`pending → firing`** |
+| 09:45:04 | `ColaDeTareasAlta` | `firing → pending` |
+| 09:52:04 | `ColaDeTareasAlta` | `pending → inactive` |
+| 09:52:04 | `FragmentosEstacionadosEnDLQ` | `inactive → pending` |
+| **09:53:04** | `FragmentosEstacionadosEnDLQ` | **`pending → firing`** |
+| 09:55:04 | `FragmentosEstacionadosEnDLQ` | `firing → inactive` |
+
+En las dos, el `for:` se cumplió exacto: `ColaDeTareasAlta` esperó sus dos minutos
+entre `pending` y `firing`, y `FragmentosEstacionadosEnDLQ` su minuto. La primera
+se provocó apagando los workers y encolando fragmentos, con la cola llegando a
+4000 mensajes contra un umbral de 100; la segunda, con un fragmento que agotó los
+tres reintentos (ver 8.4).
+
+**De dónde sale el registro, y por qué eso importa.** El script que mira las
+alertas en vivo cada 15 s falló en la primera corrida: elegía el intérprete con
+`command -v python`, y en Windows existe un `python` que es el *stub* de la
+Microsoft Store, que se encuentra en el `PATH` pero no ejecuta nada y sale sin
+imprimir. Todas las muestras quedaron vacías. El dato, sin embargo, no se había
+perdido: Prometheus expone la serie sintética `ALERTS{alertname, alertstate}`,
+que vale 1 mientras una alerta está en `pending` o `firing` y desaparece cuando
+vuelve a `inactive`. Con una consulta de rango se reconstruye la misma cronología,
+con horarios exactos y la resolución del scrape; eso hace
+[`scripts/alertas_desde_prometheus.py`](../scripts/alertas_desde_prometheus.py).
+Es una propiedad del modelo de Prometheus que conviene subrayar: **el estado de
+las alertas es una serie temporal más**, así que la evidencia sobrevive a que
+falle el proceso que la estaba mirando.
+
+**Un defecto encontrado en `WorkersSinProcesar`, y su arreglo.** La alerta estaba
+escrita así:
+
+```promql
+sum(rate(tasks_processed_total{service="worker"}[2m])) == 0
+and sum(tasks_queued{queue=~"tasks\.tp3-.*"}) > 0
+```
+
+y **no puede dispararse en el único escenario para el que existe**. Al apagar los
+workers, sus contenedores dejan de ser targets de scrape y la serie
+`tasks_processed_total{service="worker"}` queda ausente. En PromQL,
+`sum(rate(<serie ausente>))` no devuelve 0: devuelve un **vector vacío**, y
+`== 0` no matchea nada, así que la regla no produce resultado y la alerta vuelve
+a `inactive`. Medido: el 23/10 pasó a `pending` a las 09:38:04 —cuando los
+workers todavía reportaban 0— y volvió a `inactive` a las 09:39:04, justo en el
+instante en que su `for: 1m` debía dispararla. La serie, confirmado por consulta
+de rango, tiene un hueco sin un solo punto entre 09:38:30 y 09:41:30.
+
+El arreglo es `or vector(0)`, que sustituye 0 cuando la serie está ausente:
+
+```promql
+(sum(rate(tasks_processed_total{service="worker"}[2m])) or vector(0)) == 0
+and sum(tasks_queued{queue=~"tasks\.tp3-.*"}) > 0
+```
+
+Se verificó repitiendo el escenario con la expresión corregida
+([`evidencia/hit4/workers_sin_procesar_verificacion.txt`](../evidencia/hit4/workers_sin_procesar_verificacion.txt)):
+
+| Hora | Estado | |
+|---|---|---|
+| 10:07:48 | `inactive` | workers vivos |
+| 10:08:10 | `pending` | workers apagados, fragmentos en cola |
+| **10:08:53** | **`firing`** | se cumplió el `for: 1m` |
+| 10:09:37 | `firing` | sigue activa hasta que vuelven los workers |
+
+El caso tiene valor conceptual más allá del bug: es la falacia de suponer que el
+observador es independiente de lo observado. El monitoreo mira al sistema desde
+afuera **hasta que la parte que se cae es justamente la que emitía la señal**, y
+entonces el silencio se vuelve indistinguible de la normalidad. Toda alerta que
+se apoye en la *ausencia* de actividad necesita `absent()` o `or vector(0)`, nunca
+una comparación contra una serie que puede desaparecer.
 
 Las cuatro alertas están en dos formatos, porque los consume software distinto:
 [`alerts.yaml`](../observability/alerts.yaml) es un `PrometheusRule`, un objeto
@@ -181,6 +253,15 @@ contrapartida honesta es que en las celdas de baja concurrencia (VC=1) la meseta
 de 20 s deja pocas muestras, y ahí los percentiles p99 hay que leerlos con
 reservas: con 9 jobs completados, el p99 **es** el máximo.
 
+**La meseta no es uniforme, y hay que decirlo.** De las 79 celdas medidas, **76
+tienen meseta de 20 s y 3 de 10 s**. Las tres cortas se midieron en una pasada
+anterior con los parámetros del modo humo. Para que una meseta corta no sea
+indistinguible de una normal al leer la tabla, cada celda guarda un archivo
+`.meta` al lado de su JSON con la duración real con que fue medida, y
+`summarize.py` avisa cuando la matriz quedó con mesetas mezcladas. Comparar una
+celda de 10 s contra una de 20 s en los percentiles altos no es válido; en los
+agregados de 8.3 esas tres no participan.
+
 **Parámetros fijos en todas las celdas:**
 
 - `INVALID_RATE=0.05`: el 5% de los requests manda un archivo corrupto a
@@ -212,6 +293,11 @@ de alguna. Cada fila sale como `medida`, con un motivo declarado, o como
 `SIN MEDIR`. La razón es que R5 es un entregable que no admite huecos: si solo se
 listaran los archivos existentes, una celda cortada desaparecería de la tabla sin
 que nada lo señale.
+
+**Recuento final: 79 celdas medidas y 29 declaradas, ninguna `SIN MEDIR`.** Las 29
+declaradas llevan su motivo en
+[`loadtest/celdas_declaradas.csv`](../loadtest/celdas_declaradas.csv) y se explican
+en 8.5. Todas son del mismo vértice de la matriz: `V1=1MB` con `VA` alto.
 
 ### 8.3 Qué variable domina el desempeño
 
@@ -276,20 +362,103 @@ cantidad de fragmentos degrada la latencia de forma inmediata.
 
 ### 8.4 Casos inválidos y fallidos
 
-_(pendiente: se completa con la salida de `scripts/evidencia_hit4_r5.sh`, que
-produce los tres escenarios de falla de R5 y el conteo de errores claros,
-fragmentos en DLQ y reprocesados.)_
+**a. Operación inexistente.** Con `ops=sobel,rotate`, el check `POST /jobs -> 202`
+dio **0 de 3621**: ni un solo job llegó a crearse, así que nada pudo publicarse en
+la cola. Los rechazos devuelven 400 con cuerpo de error claro y quedan contados en
+`invalid_rejected`. Hay una observación lateral que vale la pena: como el rechazo
+es inmediato, el usuario virtual no espera por ningún job y el bucle alcanzó
+**212 req/s con un solo usuario**, muy por encima del `RATE_LIMIT_PER_MIN=600` por
+sujeto. A partir del request 600 del minuto, la respuesta pasa a ser 429 en vez de
+400. Es decir: el límite de tasa protege a la API, pero **enmascara el error
+específico bajo carga**, y por eso el check de "400 claro" pasa solo en 56 de 190
+intentos. Evidencia en
+[`evidencia/r5/casos_falla.log`](../evidencia/r5/casos_falla.log).
 
+**b. Fragmento que agota reintentos: DLQ y reproceso.** Es el caso completo, en
+[`evidencia/r5/caso_dlq_determinista.txt`](../evidencia/r5/caso_dlq_determinista.txt).
+Con `FAIL_RATE=1` y un worker, un job de 4 fragmentos recorrió toda la cadena:
+cada fragmento falló, `dlq_monitor` lo reencoló hasta agotar `MAX_RETRIES=3` y
+después lo estacionó en `tasks.parked`. El job quedó en estado `dlq` con
+`retries: 16` y el error `fragmento 0-3 agoto reintentos`. Los contadores cierran
+la aritmética exacta:
+
+| Métrica | Valor | Lectura |
+|---|---|---|
+| `task_errors_total{service="worker", reason="RuntimeError"}` | 16 | 4 fragmentos × 4 intentos |
+| `task_errors_total{service="dlq-monitor", reason="max_retries"}` | 4 | los 4 que agotaron reintentos |
+| `tasks_queued{queue="tasks.parked"}` | 4 | estacionados, esperando decisión |
+
+Con los workers sanos de nuevo, `POST /admin/dlq/reprocess` devolvió
+`{"reprocessed": 4}` y el job pasó a `done` con 4/4 fragmentos, `parked` en 0 y
+`error_rate` de vuelta en 0. **El daño de un fragmento que agota reintentos es
+reprocesarlo, no perderlo ni corromper la salida.**
+
+Dos cosas que este caso enseñó sobre el método, no sobre el sistema:
+
+1. El primer intento usó `FAIL_RATE=0.3` y **no produjo un solo error**. El motivo
+   es `docker compose up -d --no-deps worker` sin `--scale`: con seis réplicas
+   corriendo, no recreó a todas, y la mayoría siguió con `FAIL_RATE=0`. Un
+   experimento que no verifica que su variable independiente llegó al sujeto no
+   mide nada; de ahí que la corrida definitiva compruebe el valor con
+   `docker compose exec worker printenv FAIL_RATE` antes de generar carga.
+2. Una ráfaga instantánea de errores **no aparece en una tasa**. Los 16 errores
+   entraron de golpe: la serie `task_errors_total` nació valiendo 16 y quedó
+   plana, y `rate()` sobre un contador que aparece y no vuelve a subir da 0. Para
+   que el panel de tasa de errores muestre algo hay que sostener la falla en el
+   tiempo, no provocarla una vez.
+
+Sostenida, entonces: con `FAIL_RATE=0.3` sobre dos workers durante 120 s, la tasa
+de error **por fragmento** se estacionó en torno al **12%**, pero los errores
+**end-to-end por job** fueron solo **3,20% (39 de 1215)**. Esa brecha es el
+trabajo que hacen los reintentos, y es el número que importa para R5: el sistema
+absorbe una tasa de fallo de fragmento del 30% y la convierte en algo cercano al
+3% de jobs afectados.
+
+**c. Worker que muere con fragmentos en vuelo.** El intento automatizado del paso
+8 **no demuestra lo que se propone** y queda señalado como tal: `docker compose
+kill worker` mata *todas* las réplicas, y además corrió sin carga en vuelo, así
+que lo único que registra es el kill. Para que sea evidencia de reasignación hay
+que matar **un** worker mientras otros procesan y mostrar los fragmentos
+reentregados (`redelivered=True`, que el worker registra como `reentregado`). El
+mecanismo en sí está verificado en el Hit #1, etapa 3; falta reproducirlo bajo la
+carga de R5.
 
 ### 8.5 Límites del entorno y celdas no medidas
 
-Seis celdas (`V1=1MB`, `VA=50`, `VC=50`, cruzadas con los dos valores de V3 y las
-tres cadenas de VB) **no se pudieron medir** y figuran declaradas en la tabla.
-El motivo es aritmético: 50 archivos de 1 MB por request con 50 usuarios
-concurrentes son **2,5 GB de cuerpos de request en vuelo**, contra ~2 GB de RAM
-libre en la máquina de pruebas. El primer intento no solo falló: agotó la memoria
-de la VM de Docker y dejó al motor devolviendo error 500 en todas sus llamadas,
-obligando a reiniciar Docker Desktop.
+**Veintinueve celdas no se pudieron medir, y el límite no está donde parecía.**
+Todas son `V1=1MB` con `VA` alto (10 o 50) y figuran declaradas en la tabla, con
+su motivo en
+[`loadtest/celdas_declaradas.csv`](../loadtest/celdas_declaradas.csv).
+
+La primera explicación fue aritmética y resultó **incompleta**: 50 archivos de 1 MB
+por request con 50 usuarios concurrentes son 2,5 GB de cuerpos en vuelo contra
+~2 GB de RAM libre, y el intento agotó la memoria de la VM de Docker dejando al
+motor con error 500 en todas sus llamadas, obligando a reiniciar Docker Desktop.
+Pero esa cuenta no explicaba las celdas de `VA=50` con `VC=1`, que son apenas
+50 MB, ni las de `VA=10`, que son 500 MB: todas fallaban igual.
+
+La causa real, medida, **está en el generador de carga y no en el sistema bajo
+prueba**. k6 ejecuta el contexto de init **una vez por usuario virtual**, y es ahí
+donde el escenario arma el cuerpo multipart con la `FormData` de la jslib, que
+concatena los bytes en JavaScript con un pico de memoria que es un múltiplo grande
+del payload. Cada VU se queda con su propia copia de `PAYLOAD_OK` y, como
+`INVALID_RATE=0.05 > 0`, también de `PAYLOAD_INVALIDO`. El contenedor muere por
+OOM con `exit 137` en `00/N VUs initialized`, **antes de emitir el primer
+request**, y por eso no escribe el JSON de la celda. El costo escala con
+VUs × VA × V1 del lado del que mide, no del lado del que es medido.
+
+No alcanza con mover el armado al contexto de init, que es lo que el escenario ya
+hace: init corre por VU, así que el payload se duplica tantas veces como usuarios
+virtuales haya. Tampoco se puede usar el multipart nativo de k6, que lo armaría en
+Go en vez de en JavaScript, porque no admite claves repetidas y el backend espera
+el campo `files` repetido. Subir el techo de memoria del contenedor tampoco
+alcanzó: con 4 GB la máquina entera quedó sin memoria disponible.
+
+La consecuencia metodológica es la que importa: **estas 29 celdas no dicen nada
+sobre el límite del sistema**. Decir "el sistema no soporta `VA=50`" sería leer mal
+el experimento; lo correcto es que *este* generador de carga, en *esta* máquina, no
+puede construir ese pedido. Medirlas requiere un generador que arme el cuerpo
+fuera del runtime de JavaScript, o una máquina con más RAM.
 
 A partir de ese episodio el generador de carga corre con un **techo de memoria**
 (`--memory`), de modo que una celda que no entra muere sola y el resto de la

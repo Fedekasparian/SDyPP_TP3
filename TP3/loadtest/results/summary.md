@@ -37,23 +37,23 @@
 | 1MB | 2 | 1 | 3 | 10 | medida | 20s | 6.015 | 7.183 | 7.582 | 48 | 4.13 | 0 | 0 | 0 | 1 | si |  |
 | 1MB | 2 | 1 | 3 | 50 | medida | 10s | 8.054 | 10.403 | 10.788 | 134 | 71.03 | 0 | 0 | 0 | 7 | no |  |
 | 1MB | 2 | 10 | 1 | 1 | medida | 20s | 16.546 | 17.7 | 17.802 | 2 | 0.84 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 2 | 10 | 1 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 10 | 1 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 1MB | 2 | 10 | 2 | 1 | medida | 20s | 20.407 | 22.565 | 22.757 | 2 | 0.76 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 2 | 10 | 2 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 10 | 2 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 1MB | 2 | 10 | 3 | 1 | medida | 20s | 14.347 | 14.598 | 14.62 | 2 | 0.89 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 2 | 10 | 3 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 10 | 3 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 1 | 1 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 1 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 1 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 10 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 1MB | 2 | 50 | 2 | 1 | medida | 20s | 0.0 | 0.0 | 0.0 | 0 | 0.18 | 0 | 0 | 0 | 0 | si |  |
-| 1MB | 2 | 50 | 2 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 2 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 3 | 1 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 3 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 2 | 50 | 3 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 2 | 50 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 10KB | 6 | 1 | 1 | 1 | medida | 20s | 0.523 | 0.537 | 0.543 | 48 | 4.03 | 0 | 0 | 0 | 5 | si |  |
 | 10KB | 6 | 1 | 1 | 10 | medida | 20s | 0.524 | 0.551 | 0.574 | 477 | 33.32 | 0 | 0 | 0 | 24 | si |  |
 | 10KB | 6 | 1 | 1 | 50 | medida | 20s | 1.178 | 1.809 | 2.128 | 1097 | 106.71 | 0 | 0 | 0 | 58 | si |  |
@@ -83,28 +83,28 @@
 | 10KB | 6 | 50 | 3 | 50 | medida | 20s | 20.619 | 28.567 | 29.811 | 11 | 23.49 | 0.8136 | 0 | 48 | 2 | no |  |
 | 1MB | 6 | 1 | 1 | 1 | medida | 20s | 1.679 | 2.093 | 2.099 | 15 | 1.65 | 0 | 0 | 0 | 0 | si |  |
 | 1MB | 6 | 1 | 1 | 10 | medida | 20s | 5.3 | 7.658 | 8.1 | 50 | 4.36 | 0 | 0 | 0 | 5 | si |  |
-| 1MB | 6 | 1 | 1 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 1 | 1 | 50 | medida | 20s | 5.365 | 6.638 | 6.746 | 283 | 83.49 | 0 | 0 | 0 | 19 | si |  |
 | 1MB | 6 | 1 | 2 | 1 | medida | 20s | 1.773 | 2.628 | 3.553 | 14 | 1.58 | 0 | 0 | 0 | 1 | si |  |
 | 1MB | 6 | 1 | 2 | 10 | medida | 20s | 5.396 | 7.603 | 7.963 | 50 | 4.44 | 0 | 0 | 0 | 2 | si |  |
-| 1MB | 6 | 1 | 2 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 1 | 2 | 50 | medida | 20s | 4.769 | 6.631 | 6.825 | 305 | 85.85 | 0 | 0 | 0 | 15 | si |  |
 | 1MB | 6 | 1 | 3 | 1 | medida | 20s | 1.817 | 2.118 | 2.202 | 14 | 1.71 | 0 | 0 | 0 | 4 | si |  |
 | 1MB | 6 | 1 | 3 | 10 | medida | 20s | 6.384 | 9.281 | 9.766 | 42 | 3.74 | 0 | 0 | 0 | 4 | si |  |
-| 1MB | 6 | 1 | 3 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 1 | 3 | 50 | medida | 20s | 6.91 | 8.633 | 9.044 | 228 | 73.55 | 0 | 0 | 0 | 13 | si |  |
 | 1MB | 6 | 10 | 1 | 1 | medida | 20s | 14.742 | 16.032 | 16.146 | 2 | 0.87 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 6 | 10 | 1 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 10 | 1 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 1MB | 6 | 10 | 2 | 1 | medida | 20s | 15.71 | 17.587 | 17.753 | 2 | 0.8 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 6 | 10 | 2 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 10 | 2 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
 | 1MB | 6 | 10 | 3 | 1 | medida | 20s | 13.716 | 14.064 | 14.095 | 2 | 0.92 | 0 | 0 | 0 | 0 | no |  |
-| 1MB | 6 | 10 | 3 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 10 | 3 | 50 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 1 | 1 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 1 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 1 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 2 | 1 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 2 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 2 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 3 | 1 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 3 | 10 | SIN MEDIR | - | - | - | - | - | - | - | - | - | - | - | - |
-| 1MB | 6 | 50 | 3 | 50 | no medible: 2.5 GB en vuelo exceden la RAM libre del entorno de prueba | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (100 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 10 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 1 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 2 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 1 | no medible: OOM de k6 al inicializar los VUs (50 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 10 | no medible: OOM de k6 al inicializar los VUs (500 MB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |
+| 1MB | 6 | 50 | 3 | 50 | no medible: OOM de k6 al inicializar los VUs (2.4 GB de cuerpos en vuelo | - | - | - | - | - | - | - | - | - | - | - | - |

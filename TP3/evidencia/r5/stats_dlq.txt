@@ -1,0 +1,6 @@
+########## /stats ANTES del reproceso  (09:46:55)
+{"jobs_by_status":{"queued":0,"processing":0,"done":105,"failed":0,"dlq":0},"queues":{"split.requests":0,"tasks.dlq":0,"tasks.parked":0,"tasks.tp3-worker":0},"active_workers":["4da617663c1a-5ab85d","20d84bd6976c-71d717"],"latency_s":{"p50":1.5493,"p95":279.2559,"p99":282.064,"samples":105},"error_rate":0.0}
+########## POST /admin/dlq/reprocess   (09:46:56)
+{"reprocessed":0,"jobs":[]}
+########## /stats DESPUES del reproceso (09:47:16)
+{"jobs_by_status":{"queued":0,"processing":0,"done":105,"failed":0,"dlq":0},"queues":{"split.requests":0,"tasks.dlq":0,"tasks.parked":0,"tasks.tp3-worker":0},"active_workers":["4da617663c1a-5ab85d","20d84bd6976c-71d717"],"latency_s":{"p50":1.5493,"p95":279.2559,"p99":282.064,"samples":105},"error_rate":0.0}

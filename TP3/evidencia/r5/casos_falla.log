@@ -1,0 +1,242 @@
+### SMOKE: celdas cortas, solo para validar que el stack responde.
+--------------------------------------------------------------------
+Matriz      : r5 (SMOKE)
+Celdas      : 1   (las que ya tengan JSON en results/ se saltean)
+Por celda   : ramp 3s + meseta 10s + 5s   (timeout 120s)
+k6          : imagen docker grafana/k6:0.54.0
+Backend     : http://localhost:8000 (k6 lo ve como http://backend:8000)
+Escalado V3 : MODE=none
+--------------------------------------------------------------------
+--> escalando workers a 0
+    (MODE=none: no escalo, dejo los workers como estan)
+[1/1] ==> smoke_V1-10KB_V3-0_VA-50_VB-1_VC-10
+
+     ✓ bot sin token -> 401
+     ✓ POST /jobs -> 202
+
+     checks.........................: 100.00% 30 out of 30
+     data_received..................: 189 kB  7.8 kB/s
+     data_sent......................: 11 MB   438 kB/s
+     http_req_blocked...............: avg=36.52µs  min=3.97µs  med=10.33µs  p(95)=38.37µs  p(99)=736.66µs max=2.58ms   count=440
+     http_req_connecting............: avg=14.69µs  min=0s      med=0s       p(95)=0s       p(99)=542.65µs max=1.04ms   count=440
+     http_req_duration..............: avg=6.46ms   min=1.81ms  med=3.95ms   p(95)=10.45ms  p(99)=37.03ms  max=266.64ms count=440
+       { expected_response:true }...: avg=6.52ms   min=2.15ms  med=3.96ms   p(95)=12.77ms  p(99)=37.65ms  max=266.64ms count=430
+     http_req_failed................: 2.27%   10 out of 440
+     http_req_receiving.............: avg=245.27µs min=98.19µs med=207.79µs p(95)=479.41µs p(99)=748.58µs max=1.01ms   count=440
+     http_req_sending...............: avg=161.11µs min=15.68µs med=56.7µs   p(95)=240.51µs p(99)=2.74ms   max=9.72ms   count=440
+     http_req_tls_handshaking.......: avg=0s       min=0s      med=0s       p(95)=0s       p(99)=0s       max=0s       count=440
+     http_req_waiting...............: avg=6.05ms   min=1.58ms  med=3.66ms   p(95)=9.94ms   p(99)=34.05ms  max=263.02ms count=440
+     http_reqs......................: 440     18.061473/s
+     iteration_duration.............: avg=7.1s     min=1s      med=10.12s   p(95)=10.29s   p(99)=10.37s   max=10.38s   count=30 
+     iterations.....................: 30      1.231464/s
+   ✗ job_errors.....................: 100.00% 20 out of 20
+   ✓ job_latency....................: avg=0s       min=0s      med=0s       p(95)=0s       p(99)=0s       max=0s       count=0  
+     job_timeouts...................: 20      0.820976/s
+     vus............................: 2       min=0         max=11
+     vus_max........................: 11      min=0         max=11
+
+time="2026-10-23T12:37:21Z" level=error msg="thresholds on metrics 'job_errors' have been crossed"
+   (thresholds no cumplidos o celda cortada por timeout: es un dato, sigue)
+matriz r5: 108 celdas esperadas | 79 medidas | 6 declaradas | 23 SIN MEDIR
+  ATENCION: la matriz tiene mesetas mezcladas, hay que declararlo en el informe:
+    meseta 10s: 3 celdas
+    meseta 20s: 76 celdas
+  faltan (correrlas o declararlas en celdas_declaradas.csv):
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '10'}
+##### CASO a: operacion inexistente (rotate) -> debe dar 400
+### SMOKE: celdas cortas, solo para validar que el stack responde.
+--------------------------------------------------------------------
+Matriz      : r5 (SMOKE)
+Celdas      : 1   (las que ya tengan JSON en results/ se saltean)
+Por celda   : ramp 3s + meseta 10s + 5s   (timeout 300s)
+k6          : imagen docker grafana/k6:0.54.0
+Backend     : http://localhost:8000 (k6 lo ve como http://backend:8000)
+Escalado V3 : MODE=compose
+--------------------------------------------------------------------
+--> escalando workers a 2
+ Container sdypp_tp3-worker-1 Running 
+ Container sdypp_tp3-worker-2 Running 
+ Container sdypp_tp3-worker-5 Stopping 
+ Container sdypp_tp3-worker-4 Stopping 
+ Container sdypp_tp3-worker-3 Stopping 
+ Container sdypp_tp3-worker-6 Stopping 
+ Container sdypp_tp3-worker-5 Stopped 
+ Container sdypp_tp3-worker-5 Removing 
+ Container sdypp_tp3-worker-3 Stopped 
+ Container sdypp_tp3-worker-3 Removing 
+ Container sdypp_tp3-worker-5 Removed 
+ Container sdypp_tp3-worker-6 Stopped 
+ Container sdypp_tp3-worker-6 Removing 
+ Container sdypp_tp3-worker-3 Removed 
+ Container sdypp_tp3-worker-4 Stopped 
+ Container sdypp_tp3-worker-4 Removing 
+ Container sdypp_tp3-worker-6 Removed 
+ Container sdypp_tp3-worker-4 Removed 
+[1/1] ==> smoke_V1-10KB_V3-2_VA-1_VB-2_VC-1
+
+     ✓ bot sin token -> 401
+     ✗ POST /jobs -> 202
+      ↳  0% — ✓ 0 / ✗ 3621
+     ✗ invalido -> 400 claro
+      ↳  29% — ✓ 56 / ✗ 134
+
+     checks.........................: 1.72%   66 out of 3821
+     data_received..................: 855 kB  47 kB/s
+     data_sent......................: 40 MB   2.2 MB/s
+     http_req_blocked...............: avg=7.02µs   min=3.15µs  med=5.31µs   p(95)=9.78µs   p(99)=16.87µs  max=1.73ms   count=3822
+     http_req_connecting............: avg=343ns    min=0s      med=0s       p(95)=0s       p(99)=0s       max=559.02µs count=3822
+     http_req_duration..............: avg=3.64ms   min=2.18ms  med=3.17ms   p(95)=5.99ms   p(99)=8.97ms   max=298.54ms count=3822
+       { expected_response:true }...: avg=5.62ms   min=5.62ms  med=5.62ms   p(95)=5.62ms   p(99)=5.62ms   max=5.62ms   count=1   
+     http_req_failed................: 99.97%  3821 out of 3822
+     http_req_receiving.............: avg=260.9µs  min=86.03µs med=210.18µs p(95)=508.68µs p(99)=899.15µs max=4.39ms   count=3822
+     http_req_sending...............: avg=190.55µs min=16.51µs med=168.18µs p(95)=302.79µs p(99)=459.27µs max=4.03ms   count=3822
+     http_req_tls_handshaking.......: avg=0s       min=0s      med=0s       p(95)=0s       p(99)=0s       max=0s       count=3822
+     http_req_waiting...............: avg=3.19ms   min=1.82ms  med=2.79ms   p(95)=5.17ms   p(99)=7.69ms   max=298.15ms count=3822
+     http_reqs......................: 3822    212.024194/s
+     invalid_rejected...............: 56      3.106582/s
+     iteration_duration.............: avg=6.53ms   min=2.57ms  med=3.42ms   p(95)=6.53ms   p(99)=10.2ms   max=1s       count=3821
+     iterations.....................: 3821    211.96872/s
+   ✗ job_errors.....................: 100.00% 3621 out of 3621
+   ✓ job_latency....................: avg=0s       min=0s      med=0s       p(95)=0s       p(99)=0s       max=0s       count=0   
+     vus............................: 1       min=1            max=2
+     vus_max........................: 2       min=2            max=2
+
+time="2026-10-23T12:44:09Z" level=error msg="thresholds on metrics 'job_errors' have been crossed"
+   (thresholds no cumplidos o celda cortada por timeout: es un dato, sigue)
+matriz r5: 108 celdas esperadas | 79 medidas | 6 declaradas | 23 SIN MEDIR
+  ATENCION: la matriz tiene mesetas mezcladas, hay que declararlo en el informe:
+    meseta 10s: 3 celdas
+    meseta 20s: 76 celdas
+  faltan (correrlas o declararlas en celdas_declaradas.csv):
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '10'}
+##### CASO b: FAIL_RATE=0.3 -> fuerza reintentos y DLQ
+### SMOKE: celdas cortas, solo para validar que el stack responde.
+--------------------------------------------------------------------
+Matriz      : r5 (SMOKE)
+Celdas      : 1   (las que ya tengan JSON en results/ se saltean)
+Por celda   : ramp 3s + meseta 10s + 5s   (timeout 300s)
+k6          : imagen docker grafana/k6:0.54.0
+Backend     : http://localhost:8000 (k6 lo ve como http://backend:8000)
+Escalado V3 : MODE=compose
+--------------------------------------------------------------------
+--> escalando workers a 2
+ Container sdypp_tp3-worker-2 Creating 
+ Container sdypp_tp3-worker-1 Recreate 
+ Container sdypp_tp3-worker-2 Created 
+ Container sdypp_tp3-worker-1 Recreated 
+ Container sdypp_tp3-worker-1 Starting 
+ Container sdypp_tp3-worker-1 Started 
+ Container sdypp_tp3-worker-2 Starting 
+ Container sdypp_tp3-worker-2 Started 
+[1/1] ==> smoke_V1-10KB_V3-2_VA-10_VB-1_VC-10
+
+     ✓ bot sin token -> 401
+     ✗ POST /jobs -> 202
+      ↳  6% — ✓ 85 / ✗ 1145
+     ✗ invalido -> 400 claro
+      ↳  3% — ✓ 2 / ✗ 61
+
+     checks.........................: 7.44%  97 out of 1303
+     data_received..................: 434 kB 24 kB/s
+     data_sent......................: 137 MB 7.5 MB/s
+     http_req_blocked...............: avg=16.78µs  min=4.27µs  med=10.22µs  p(95)=16.61µs  p(99)=108µs   max=1.5ms   count=1571
+     http_req_connecting............: avg=3.81µs   min=0s      med=0s       p(95)=0s       p(99)=0s      max=1.36ms  count=1571
+     http_req_duration..............: avg=10.94ms  min=1.64ms  med=8.87ms   p(95)=22.16ms  p(99)=31.83ms max=57.33ms count=1571
+       { expected_response:true }...: avg=15.78ms  min=2.29ms  med=16.16ms  p(95)=29.5ms   p(99)=41.72ms max=57.33ms count=353 
+     http_req_failed................: 77.53% 1218 out of 1571
+     http_req_receiving.............: avg=546.6µs  min=45.35µs med=366.85µs p(95)=1.41ms   p(99)=3.64ms  max=13.51ms count=1571
+     http_req_sending...............: avg=384.13µs min=16.2µs  med=318.85µs p(95)=725.92µs p(99)=2.85ms  max=5.05ms  count=1571
+     http_req_tls_handshaking.......: avg=0s       min=0s      med=0s       p(95)=0s       p(99)=0s      max=0s      count=1571
+     http_req_waiting...............: avg=10.01ms  min=1.35ms  med=8ms      p(95)=20.71ms  p(99)=29.7ms  max=56.26ms count=1571
+     http_reqs......................: 1571   85.762847/s
+     invalid_rejected...............: 2      0.109182/s
+     iteration_duration.............: avg=120.54ms min=5.4ms   med=9.09ms   p(95)=1.05s    p(99)=2.1s    max=2.15s   count=1303
+     iterations.....................: 1303   71.132393/s
+   ✗ job_errors.....................: 93.08% 1145 out of 1230
+   ✓ job_latency....................: avg=1.58s    min=514ms   med=1.57s    p(95)=2.12s    p(99)=2.12s   max=2.15s   count=85  
+     vus............................: 1      min=0            max=11
+     vus_max........................: 11     min=11           max=11
+
+time="2026-10-23T12:44:52Z" level=error msg="thresholds on metrics 'job_errors' have been crossed"
+   (thresholds no cumplidos o celda cortada por timeout: es un dato, sigue)
+matriz r5: 108 celdas esperadas | 79 medidas | 6 declaradas | 23 SIN MEDIR
+  ATENCION: la matriz tiene mesetas mezcladas, hay que declararlo en el informe:
+    meseta 10s: 3 celdas
+    meseta 20s: 76 celdas
+  faltan (correrlas o declararlas en celdas_declaradas.csv):
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '2', 'VA': '50', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '1', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '2', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '10', 'VB': '3', 'VC': '50'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '1', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '2', 'VC': '10'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '1'}
+    {'V1': '1MB', 'V3': '6', 'VA': '50', 'VB': '3', 'VC': '10'}
+##### CASO c: matar un worker en caliente
+workers antes:
+sdypp_tp3-worker-1 Up 2 minutes
+sdypp_tp3-worker-2 Up 2 minutes
+ Container sdypp_tp3-worker-2 Killing 
+ Container sdypp_tp3-worker-1 Killing 
+ Container sdypp_tp3-worker-1 Killed 
+ Container sdypp_tp3-worker-2 Killed 
+workers despues del kill:

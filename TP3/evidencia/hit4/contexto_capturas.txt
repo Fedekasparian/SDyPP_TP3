@@ -29,6 +29,34 @@ Lectura rapida (para el informe, seccion 6):
   split queda abajo (~20), que es lo esperado: split procesa 1 mensaje por
   request y los demas 1 por fragmento.
 
+Capturas agregadas el 23/10/2026 (modo kiosk, sin el menu de Grafana)
+---------------------------------------------------------------------
+
+  latencia_por_fragmento.png   panel 7   "Latencia procesamiento por fragmento (worker)"
+                               ventana: ultimos 85 min (08:40 a 10:05)
+  tasa_de_errores.png          panel 10  "Tasa de errores"
+                               ventana: ultimos 15 min (09:50 a 10:04)
+
+Lectura:
+- panel 7: p50 ~40 ms, p95 ~85 ms, p99 entre 100 y 220 ms. Es el tiempo de
+  aplicar la cadena de operaciones a UN fragmento, no el end-to-end del job.
+  Los datos se concentran entre 08:50 y 08:55 (pasada de celdas de V1=1MB) y en
+  marcas sueltas cerca de 09:42-09:46; entre medio no hubo carga.
+- panel 10: plano en 0% y despues un escalon a ~12%, que es la corrida con
+  FAIL_RATE=0.3 sobre 2 workers entre 10:01 y 10:04. El eje llega a 14%.
+
+  OJO con la historia de este panel: la consulta original era
+  errores / clamp_min(procesados, 0.001). Con errores y casi nada procesado, esa
+  razon no esta acotada y el eje del panel llegaba a 10000%, que para una "tasa
+  de errores" es absurdo. Se corrigio en gen_dashboard.py poniendo los INTENTOS
+  en el denominador (procesados + fallados), lo que la acota a [0, 1]. La captura
+  es posterior al arreglo.
+
+  Segundo detalle: una rafaga instantanea de errores NO aparece en este panel.
+  rate() necesita que el contador suba a lo largo del tiempo; si los errores
+  entran todos de golpe y el contador queda plano, la tasa da 0. Por eso la
+  captura necesito una falla SOSTENIDA y no el caso puntual de DLQ.
+
 PENDIENTE: los paneles 1 a 4 (CPU y memoria por pod y por nodo) quedan en
 "No data" en docker-compose porque salen de cAdvisor y node-exporter, que solo
 existen en Kubernetes. Va declarado en el informe (seccion 6).
