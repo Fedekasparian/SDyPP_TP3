@@ -16,12 +16,15 @@ docker pull ${worker_image}
 
 RABBIT_PASS=$(gcloud secrets versions access latest --secret=tp3-rabbit-pass)
 REDIS_PASS=$(gcloud secrets versions access latest --secret=tp3-redis-pass)
+# base64 puede traer /, + o =, que rompen las URLs: se codifican
+RABBIT_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$RABBIT_PASS")
+REDIS_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$REDIS_PASS")
 
 # 3) Join: el worker se conecta a RabbitMQ/Redis (con retry + backoff) y empieza a consumir
 docker rm -f tp3-worker || true
 docker run -d --name tp3-worker --restart unless-stopped -p 8080:8080 \
-  -e RABBIT_URL="amqp://tp3:$${RABBIT_PASS}@${rabbit_host}:5672/" \
-  -e REDIS_URL="redis://:$${REDIS_PASS}@${redis_host}:6379/0" \
+  -e RABBIT_URL="amqp://tp3:$${RABBIT_ENC}@${rabbit_host}:5672/" \
+  -e REDIS_URL="redis://:$${REDIS_ENC}@${redis_host}:6379/0" \
   -e WORKER_POOL=${worker_pool} \
   -e ALLOWED_WORKER_IMAGES=${worker_pool} \
   -e WORKER_ID="$(hostname)" \
