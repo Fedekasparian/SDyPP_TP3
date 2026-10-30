@@ -80,7 +80,7 @@ jobs:
         run: |
           sed "s/PROJECT/${{ vars.GCP_PROJECT }}/g" TP3/observability/kube-prometheus-stack-values.yaml > "$RUNNER_TEMP/values.yaml"
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack --version 92.16.1 \
             -n monitoring --create-namespace -f "$RUNNER_TEMP/values.yaml" \
             --wait --timeout 15m
           kubectl apply -k TP3/observability

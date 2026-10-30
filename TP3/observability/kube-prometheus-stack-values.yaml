@@ -37,6 +37,10 @@ grafana:
   #   kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-user=admin --from-literal=admin-password=...
   admin:
     existingSecret: grafana-admin
+  # Grafana publica en 34.122.176.85. El Service se paso a LoadBalancer a mano (kubectl patch);
+  # si no se declara aca, Helm (server-side apply) choca con ese campo y el upgrade falla.
+  service:
+    type: LoadBalancer
   sidecar:
     dashboards:
       enabled: true
