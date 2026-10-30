@@ -1,0 +1,18 @@
+# Fluent Bit como DaemonSet: lee los logs de los contenedores de cada nodo y los manda a Loki.
+#   helm upgrade --install fluent-bit fluent/fluent-bit -n monitoring -f TP3/observability/loki/fluentbit-values.yaml
+# Los INPUT (tail de /var/log/containers) y el FILTER kubernetes son los del chart; solo cambia el OUTPUT.
+
+# Tolera todos los taints para correr tambien en el nodepool infra (RabbitMQ, Redis).
+tolerations:
+  - operator: Exists
+
+config:
+  outputs: |
+    [OUTPUT]
+        Name         loki
+        Match        kube.*
+        Host         loki.monitoring.svc.cluster.local
+        Port         3100
+        Labels       job=fluent-bit, namespace=$kubernetes['namespace_name'], pod=$kubernetes['pod_name'], container=$kubernetes['container_name']
+        Remove_keys  kubernetes,stream
+        Line_format  json

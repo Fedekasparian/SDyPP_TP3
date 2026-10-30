@@ -42,6 +42,10 @@ Sin él, el job `tp3-vm-workers` queda sin targets y el log de Prometheus muestr
 *Status → Targets* tienen que figurar `tp3-worker-0` y `tp3-worker-1` en `up`, y
 `tasks_processed_total{service="worker"}` tiene que devolver una serie por VM.
 
+## Logs centralizados (extra)
+Además de las métricas, Fluent Bit (DaemonSet) manda los logs de los pods a Loki, y se consultan
+desde el mismo Grafana en **Explore → Loki**. Detalle en [observability/loki](../observability/loki/).
+
 ## Pendientes (D)
 Paso a paso en [docs/runbook-d.md](../docs/runbook-d.md).
 - [x] Correr la matriz y capturar el dashboard en vivo durante una corrida de k6 ([evidencia/hit4](../evidencia/hit4/)).

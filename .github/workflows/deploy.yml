@@ -84,6 +84,15 @@ jobs:
             -n monitoring --create-namespace -f "$RUNNER_TEMP/values.yaml" \
             --wait --timeout 15m
           kubectl apply -k TP3/observability
+      - name: Loki y Fluent Bit (logs centralizados en Grafana)
+        run: |
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo add fluent https://fluent.github.io/helm-charts
+          helm upgrade --install loki grafana/loki --version 7.5.0 \
+            -n monitoring -f TP3/observability/loki/loki-values.yaml --wait --timeout 10m
+          helm upgrade --install fluent-bit fluent/fluent-bit --version 0.58.3 \
+            -n monitoring -f TP3/observability/loki/fluentbit-values.yaml --wait --timeout 5m
+          kubectl apply -f TP3/observability/loki/grafana-datasource.yaml
 
   apps:
     needs: base-services
