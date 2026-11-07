@@ -17,7 +17,7 @@ Estado al **20/10/2026 (Argentina)**. Implementación y validación local realiz
 | SSE y frontend con progreso / admin | Implementado y probado | [Captura admin](../evidencia/frontend_admin.png), [prueba de navegador](../evidencia/frontend_check.txt) |
 | Tests de integración y servicios reales en CI | Implementado | [test_integration.py](../services/backend/tests/test_integration.py), `.github/workflows/ci.yml` |
 | Evidencia R4 local, tres réplicas | **13 OK, 0 FAIL** | [r4_local.txt](../evidencia/r4_local.txt), [contenedores](../evidencia/r4_local_containers.txt) |
-| Evidencia R4 en GKE | **10 OK** (permisos, aislamiento y 3 réplicas); el job queda `queued` sin VMs workers | [gke/r4_gke.txt](../evidencia/gke/r4_gke.txt), corrido por [evidencia-gke.yml](../../.github/workflows/evidencia-gke.yml) |
+| Evidencia R4 en GKE | **13 OK, 0 FAIL** (3 réplicas detrás del Ingress, job procesado por las VMs workers) | [gke/r4_gke.txt](../evidencia/gke/r4_gke.txt), corrido por [evidencia-gke.yml](../../.github/workflows/evidencia-gke.yml) |
 | README de servicios, arquitectura y decisiones | Actualizado | [services/README.md](../services/README.md), [arquitectura.md](arquitectura.md) |
 
 ## Validación registrada

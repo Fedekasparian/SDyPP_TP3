@@ -1,46 +1,51 @@
-# Prometheus en GKE · 2026-11-07T15:07:27Z
+# Prometheus en GKE · 2026-11-07T15:33:38Z
 ## CPU por pod (cores)
 query: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="tp3",container!=""}[2m]))
-pod=frontend-f7f95456c-dz6hp	0.0001662005593288066
-pod=frontend-f7f95456c-2xg6c	0.0001734181799368835
-pod=redis-0	0.007249798718687075
-pod=rabbitmq-0	0.05452021746999059
-pod=backend-67ff7c6f5c-q9rjj	0.004984318247857037
-pod=dlq-monitor-5f5f58cdd5-7c7vk	0.0006282158142671185
-pod=split-64b67cf75-7vtpr	0.0011587217830872666
-pod=backend-67ff7c6f5c-9x9rc	0.004931530093739113
-pod=joiner-6769c47cd6-2vq8j	0.0003383930421558854
-pod=backend-67ff7c6f5c-wcz4x	0.004964550517647865
-pod=split-64b67cf75-4kdz5	0.0012506441857977712
-pod=joiner-6769c47cd6-j6v82	0.0003197247411179809
+pod=frontend-f7f95456c-dz6hp	0.00015483211520370347
+pod=frontend-f7f95456c-2xg6c	0.00014237446393437515
+pod=redis-0	0.00864309960273767
+pod=rabbitmq-0	0.058535323885674846
+pod=backend-78f8fddcc4-lp2rm	0.004916088633815397
+pod=dlq-monitor-6ddc44f484-nv8tb	0.001070737049715061
+pod=split-6965f866b-xl9l5	0.0011599687131810562
+pod=joiner-6955f978ff-7pd8r	0.0011887377803604735
+pod=split-6965f866b-9fblz	0.0011749110937697065
+pod=backend-78f8fddcc4-pfbsz	0.005290119158534788
+pod=backend-78f8fddcc4-hg2fn	0.0046823046550290995
+pod=joiner-6955f978ff-fmcsq	0.0023649602421017355
 
 ## Memoria por pod (bytes)
 query: sum by (pod) (container_memory_working_set_bytes{namespace="tp3",container!=""})
-pod=frontend-f7f95456c-dz6hp	3059712
-pod=frontend-f7f95456c-2xg6c	3276800
-pod=redis-0	12840960
-pod=rabbitmq-0	123904000
-pod=backend-67ff7c6f5c-q9rjj	131543040
-pod=dlq-monitor-5f5f58cdd5-7c7vk	28450816
-pod=split-64b67cf75-7vtpr	35291136
-pod=backend-67ff7c6f5c-9x9rc	131153920
-pod=joiner-6769c47cd6-2vq8j	35672064
-pod=backend-67ff7c6f5c-wcz4x	131276800
-pod=split-64b67cf75-4kdz5	34832384
-pod=joiner-6769c47cd6-j6v82	35667968
+pod=frontend-f7f95456c-dz6hp	3047424
+pod=frontend-f7f95456c-2xg6c	3301376
+pod=redis-0	19378176
+pod=rabbitmq-0	133464064
+pod=backend-78f8fddcc4-lp2rm	131596288
+pod=dlq-monitor-6ddc44f484-nv8tb	28381184
+pod=split-6965f866b-xl9l5	34844672
+pod=joiner-6955f978ff-7pd8r	34873344
+pod=split-6965f866b-9fblz	34852864
+pod=backend-78f8fddcc4-pfbsz	131244032
+pod=backend-78f8fddcc4-hg2fn	131198976
+pod=joiner-6955f978ff-fmcsq	34852864
 
 ## CPU por nodo (fraccion)
 query: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m]))
-instance=10.128.15.219:9100	0.1383333333333333
-instance=10.128.15.218:9100	0.10894444444444784
+instance=10.128.15.219:9100	0.14088888888888973
+instance=10.128.15.218:9100	0.11272222222218675
 
 ## Memoria por nodo (fraccion)
 query: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
-container=node-exporter,endpoint=http-metrics,instance=10.128.15.219:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-m8nhm,service=kube-prometheus-stack-prometheus-node-exporter	0.29068872690619896
-container=node-exporter,endpoint=http-metrics,instance=10.128.15.218:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-nbd64,service=kube-prometheus-stack-prometheus-node-exporter	0.2864084042711681
+container=node-exporter,endpoint=http-metrics,instance=10.128.15.219:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-m8nhm,service=kube-prometheus-stack-prometheus-node-exporter	0.2935468882524308
+container=node-exporter,endpoint=http-metrics,instance=10.128.15.218:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-nbd64,service=kube-prometheus-stack-prometheus-node-exporter	0.2879360691662942
 
 ## Tareas procesadas por servicio (total)
 query: sum by (service) (tasks_processed_total)
+service=dlq-monitor	492
 service=split	41
+service=joiner	374
+service=worker	492
 
 ## Targets del job tp3-vm-workers (VMs fuera del cluster)
+tp3-worker-1	http://10.128.15.222:8080/metrics	up	
+tp3-worker-0	http://10.128.15.223:8080/metrics	up	

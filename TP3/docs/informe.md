@@ -145,7 +145,7 @@ está en la sección 8.6 de este informe.
 
 La API valida antes de encolar y conserva estado en Redis. Cada request verifica un Bearer firmado con HMAC-SHA256, lo que permite usar cualquier réplica sin afinidad. Las llamadas bloqueantes de Redis/pika y el procesamiento de validación se ejecutan fuera del event loop. El consumidor del fanout guarda progreso en un Redis Stream con TTL; el frontend recibe snapshots mediante SSE y ofrece estadísticas para admin.
 
-La validación local incluye 58 pruebas (13 de integración con servicios reales), igualdad del resultado distribuido con el cálculo centralizado y evidencia R4 con tres backends. En GKE, R4 se corrió el 07/11/2026 desde el workflow [evidencia-gke.yml](../../.github/workflows/evidencia-gke.yml), contra el Ingress público y con el backend escalado a tres réplicas. Las 10 verificaciones de permisos, aislamiento y réplicas pasan, y se observan tres pods backend distintos. Detalle en la sección 7 y en [evidencia/gke/r4_gke.txt](../evidencia/gke/r4_gke.txt). Detalles y límites: [parte-b.md](parte-b.md).
+La validación local incluye 58 pruebas (13 de integración con servicios reales), igualdad del resultado distribuido con el cálculo centralizado y evidencia R4 con tres backends. En GKE, R4 se corrió el 07/11/2026 desde el workflow [evidencia-gke.yml](../../.github/workflows/evidencia-gke.yml), contra el Ingress público y con el backend escalado a tres réplicas. Pasan las 13 verificaciones, con tres pods backend distintos y el job procesado por las VMs workers. Detalle en la sección 7 y en [evidencia/gke/r4_gke.txt](../evidencia/gke/r4_gke.txt). Detalles y límites: [parte-b.md](parte-b.md).
 
 ## 6. Hit #4: observabilidad (D)
 
@@ -248,14 +248,39 @@ La separación de nodegroups se ve en los datos: RabbitMQ y Redis corren en el
 nodo `infra` (10.128.15.219) y las apps en `apps` (10.128.15.218). Ver
 [contexto_gke_despues.txt](../evidencia/gke/contexto_gke_despues.txt).
 
+**Capturas del dashboard en GKE** ([evidencia/gke](../evidencia/gke/), últimos 30
+minutos del 07/11/2026): `grafana_dashboard_completo.png` y un panel por archivo
+(`grafana_cpu_por_pod.png`, `grafana_memoria_por_pod.png`,
+`grafana_cpu_por_nodo.png`, `grafana_memoria_por_nodo.png`,
+`grafana_rabbitmq_publicados_consumidos.png` y
+`grafana_latencia_fragmento_p50_p95_p99.png`). Muestran un experimento que no
+estaba planeado, pero que es útil:
+
+- Mientras no había VMs workers, `tasks.tp3-worker` subió a unos **330
+  mensajes** y se quedó ahí. Los jobs se aceptaban (202) y esperaban en la cola.
+  Ningún mensaje se perdió.
+- A las 15:31 el pipeline `workers` sumó `tp3-worker-0` y `tp3-worker-1`. La cola
+  **bajó a 0 en menos de un minuto** y aparecieron en el throughput worker, joiner
+  y dlq-monitor. Prometheus las ve en `up` por `gce_sd_configs` y contabiliza 492
+  fragmentos procesados por las VMs.
+- La latencia por fragmento en las VMs (e2-small) es de p50 ≈ 17 ms y p95 ≈ 24 ms.
+- *Tasa de errores* figura en "No data" porque no hubo ningún error: la serie
+  `task_errors_total` no existe hasta que ocurre el primero.
+
+Es el patrón de cloud-bursting del Hit #2 visto desde la observabilidad: la cola
+absorbe la demanda y la capacidad extra la drena cuando llega.
+
 **Incidente en GKE (07/11/2026).** Al ir a tomar esta evidencia, el pool `infra`
 estaba en 0 nodos, aunque en Terraform tiene `node_count = 1`: alguien lo había
 bajado a mano. Con eso RabbitMQ, Redis, Prometheus y Grafana quedaron en `Pending`,
 y backend, split y joiner en `CrashLoopBackOff` (más de 600 reinicios). Además, el
 05/11 GCP no pudo recrear nodos `apps` spot por la cuota regional `SSD_TOTAL_GB`
 (300 GB). Cada nodo lleva un disco `pd-balanced` de 100 GB, que cuenta como SSD.
-El workflow volvió el pool al estado declarado y verificó la cuota antes (116 de
-300 GB usados). El diagnóstico completo está en
+También faltaban todos los recursos que crean balanceadores: el Ingress, el
+Service de Grafana y los ILB `rabbitmq-internal` y `redis-internal`. Sin estos
+últimos, el pipeline `workers` no puede resolver a dónde conectar las VMs. El
+workflow volvió el pool al estado declarado (verificó antes la cuota: 116 de 300 GB
+usados) y recreó el Ingress y los ILB desde los manifiestos del repo. El diagnóstico completo está en
 [diagnostico_nodepools.txt](../evidencia/gke/diagnostico_nodepools.txt). Las
 lecciones son dos. Primero, los pods de infraestructura sin réplica fuera de su
 pool son un punto único de falla. Segundo, en una cuenta con cuota chica, los
@@ -367,16 +392,18 @@ en local.
 | R1 | Captura de `ImagePullBackOff` y del pull exitoso | [r1-evidencia.md](r1-evidencia.md) |
 | R2 | Requests inválidos devuelven 400 y la cola no cambia | video, logs |
 | R3 | [contrato.md](contrato.md) | |
-| R4 | Local: 13/13, tres backends distintos. GKE: 401, 403, aislamiento (404 en status, events y result) y 30/30 lecturas repartidas entre **tres pods backend distintos** detrás del Ingress público (ver nota) | [r4_local.txt](../evidencia/r4_local.txt), [r4_gke.txt](../evidencia/gke/r4_gke.txt), [parte B](parte-b.md) |
+| R4 | Local: 13/13. GKE: **13/13**, con 401, 403, aislamiento (404 en status, events y result), 30/30 lecturas repartidas entre **tres pods backend distintos** detrás del Ingress público, y el job procesado por las VMs workers (ver nota) | [r4_local.txt](../evidencia/r4_local.txt), [r4_gke.txt](../evidencia/gke/r4_gke.txt), [parte B](parte-b.md) |
 | R5 | Matriz completa | sección 8 |
 
 **Nota sobre R4 en GKE.** El script además envía un job y espera que termine. En
 GKE, los workers no son pods: corren en VMs fuera del cluster (Hit #3, pipeline
-`workers`). En la corrida del 07/11 no había VMs prendidas (`worker_count = 0`
-para no gastar créditos), así que el job quedó `queued`. Es justo el
+`workers`). En la primera corrida del 07/11 no había VMs prendidas, y el resultado
+fue 10/11, con el job en `queued`
+([r4_gke_sin_workers.txt](../evidencia/gke/r4_gke_sin_workers.txt)). Es el
 comportamiento asincrónico esperado: el mensaje espera en RabbitMQ hasta que haya
-un consumidor. Ese paso no es parte de R4, que pide roles, aislamiento y réplicas;
-la corrida local completa el job (13/13).
+un consumidor. Con las dos VMs creadas por el pipeline `workers`, la corrida da
+**13/13** ([r4_gke.txt](../evidencia/gke/r4_gke.txt)): el job llega a `done`, se
+descarga el PNG y el SSE responde.
 
 ## 8. Análisis de desempeño (D)
 

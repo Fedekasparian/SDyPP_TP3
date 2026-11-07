@@ -1,21 +1,22 @@
 ## Despues de levantar
-NAME                          STATUS   ROLES    AGE     VERSION               INTERNAL-IP     EXTERNAL-IP       OS-IMAGE                             KERNEL-VERSION      CONTAINER-RUNTIME    POOL
-gke-tp3-apps-58bb8929-q8l7    Ready    <none>   38h     v1.36.4-gke.2046003   10.128.15.218   136.112.192.105   Container-Optimized OS from Google   6.12.105+ (amd64)   containerd://2.2.7   apps
-gke-tp3-infra-7d17185a-9gxq   Ready    <none>   8m21s   v1.36.4-gke.2046003   10.128.15.219   136.71.159.236    Container-Optimized OS from Google   6.12.105+ (amd64)   containerd://2.2.7   infra
-NAME                            READY   STATUS             RESTARTS      AGE     IP           NODE                          NOMINATED NODE   READINESS GATES
-backend-67ff7c6f5c-9x9rc        1/1     Running            0             6m48s   10.48.0.32   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-backend-67ff7c6f5c-q9rjj        1/1     Running            0             7m1s    10.48.0.28   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-backend-67ff7c6f5c-wcz4x        1/1     Running            0             6m36s   10.48.0.34   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-dlq-monitor-5f5f58cdd5-7c7vk    1/1     Running            0             7m1s    10.48.0.30   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-ex1-consumer-5bb8794dc9-5cqbb   0/1     ImagePullBackOff   0             38h     10.48.0.20   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-ex1-consumer-5bb8794dc9-wh2v9   0/1     ImagePullBackOff   0             38h     10.48.0.22   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-frontend-f7f95456c-2xg6c        1/1     Running            3 (38h ago)   38h     10.48.0.2    gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-frontend-f7f95456c-dz6hp        1/1     Running            3 (38h ago)   38h     10.48.0.14   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-joiner-6769c47cd6-2vq8j         1/1     Running            0             7m1s    10.48.0.31   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-joiner-6769c47cd6-j6v82         1/1     Running            0             6m37s   10.48.0.35   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-rabbitmq-0                      1/1     Running            0             39h     10.48.1.9    gke-tp3-infra-7d17185a-9gxq   <none>           1/1
-redis-0                         2/2     Running            0             39h     10.48.1.10   gke-tp3-infra-7d17185a-9gxq   <none>           1/1
-split-64b67cf75-4kdz5           1/1     Running            0             6m49s   10.48.0.33   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
-split-64b67cf75-7vtpr           1/1     Running            0             7m1s    10.48.0.29   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+NAME                          STATUS   ROLES    AGE   VERSION               INTERNAL-IP     EXTERNAL-IP       OS-IMAGE                             KERNEL-VERSION      CONTAINER-RUNTIME    POOL
+gke-tp3-apps-58bb8929-q8l7    Ready    <none>   39h   v1.36.4-gke.2046003   10.128.15.218   136.112.192.105   Container-Optimized OS from Google   6.12.105+ (amd64)   containerd://2.2.7   apps
+gke-tp3-infra-7d17185a-9gxq   Ready    <none>   36m   v1.36.4-gke.2046003   10.128.15.219   136.71.159.236    Container-Optimized OS from Google   6.12.105+ (amd64)   containerd://2.2.7   infra
+NAME                            READY   STATUS             RESTARTS      AGE   IP           NODE                          NOMINATED NODE   READINESS GATES
+backend-78f8fddcc4-hg2fn        1/1     Running            0             24s   10.48.0.51   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+backend-78f8fddcc4-lp2rm        1/1     Running            0             90s   10.48.0.44   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+backend-78f8fddcc4-pfbsz        1/1     Running            0             77s   10.48.0.49   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+dlq-monitor-6ddc44f484-nv8tb    1/1     Running            0             89s   10.48.0.46   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+ex1-consumer-5bb8794dc9-5cqbb   0/1     ImagePullBackOff   0             39h   10.48.0.20   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+ex1-consumer-5bb8794dc9-wh2v9   0/1     ImagePullBackOff   0             39h   10.48.0.22   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+frontend-f7f95456c-2xg6c        1/1     Running            3 (39h ago)   39h   10.48.0.2    gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+frontend-f7f95456c-dz6hp        1/1     Running            3 (39h ago)   39h   10.48.0.14   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+joiner-6955f978ff-7pd8r         1/1     Running            0             89s   10.48.0.47   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+joiner-6955f978ff-fmcsq         1/1     Running            0             65s   10.48.0.50   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+joiner-6dcf6b845d-dv4c9         1/1     Terminating        0             20m   10.48.0.39   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+rabbitmq-0                      1/1     Running            0             39h   10.48.1.9    gke-tp3-infra-7d17185a-9gxq   <none>           1/1
+redis-0                         2/2     Running            0             39h   10.48.1.10   gke-tp3-infra-7d17185a-9gxq   <none>           1/1
+split-6965f866b-9fblz           1/1     Running            0             86s   10.48.0.48   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
+split-6965f866b-xl9l5           1/1     Running            0             90s   10.48.0.45   gke-tp3-apps-58bb8929-q8l7    <none>           <none>
 NAME   CLASS    HOSTS   ADDRESS        PORTS   AGE
-tp3    <none>   *       8.233.15.127   80      6m9s
+tp3    <none>   *       8.233.15.127   80      34m
