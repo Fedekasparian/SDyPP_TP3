@@ -1,0 +1,18 @@
+# Loki como fuente de datos de Grafana. El sidecar de kube-prometheus-stack carga los ConfigMaps
+# con el label grafana_datasource=1 del namespace monitoring, sin tocar el release de Helm.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: loki-datasource
+  namespace: monitoring
+  labels:
+    grafana_datasource: "1"
+data:
+  loki.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Loki
+        type: loki
+        uid: loki
+        access: proxy
+        url: http://loki.monitoring.svc.cluster.local:3100

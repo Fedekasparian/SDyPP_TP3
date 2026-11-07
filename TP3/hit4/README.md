@@ -36,7 +36,15 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   #
 ```
 Para que Prometheus descubra las VMs workers, su KSA usa el SA `tp3-gke-nodes` (con
 `compute.viewer`) por Workload Identity. Ese binding está en
-[bootstrap/main.tf](../infra/terraform/bootstrap/main.tf) y requiere un `terraform apply` del bootstrap.
+[bootstrap/main.tf](../infra/terraform/bootstrap/main.tf) (`prometheus_wi`) y se aplicó el 30/10/2026.
+Sin él, el job `tp3-vm-workers` queda sin targets y el log de Prometheus muestra
+`403 ... iam.serviceAccounts.getAccessToken denied`. Para verificarlo, en Prometheus
+*Status → Targets* tienen que figurar `tp3-worker-0` y `tp3-worker-1` en `up`, y
+`tasks_processed_total{service="worker"}` tiene que devolver una serie por VM.
+
+## Logs centralizados (extra)
+Además de las métricas, Fluent Bit (DaemonSet) manda los logs de los pods a Loki, y se consultan
+desde el mismo Grafana en **Explore → Loki**. Detalle en [observability/loki](../observability/loki/).
 
 ## Pendientes (D)
 Paso a paso en [docs/runbook-d.md](../docs/runbook-d.md).
@@ -44,5 +52,5 @@ Paso a paso en [docs/runbook-d.md](../docs/runbook-d.md).
 - [x] Disparar `ColaDeTareasAlta` (apagar los workers y mandar carga) y capturarla ([alertas_transicion.log](../evidencia/hit4/alertas_transicion.log)).
 - [ ] Capturas de CPU y memoria por pod y por nodo en GKE: en docker-compose esos paneles
       quedan vacíos porque salen de cAdvisor y node-exporter, que solo existen en Kubernetes.
-- [x] `PROJECT` se reemplaza en el deploy y el SA de nodos ya tiene `roles/compute.viewer`.
-      Falta aplicar el binding de Workload Identity del bootstrap (C).
+- [x] `PROJECT` se reemplaza en el deploy, el SA de nodos tiene `roles/compute.viewer` y el
+      binding de Workload Identity del bootstrap está aplicado: Prometheus scrapea las VMs workers (C).

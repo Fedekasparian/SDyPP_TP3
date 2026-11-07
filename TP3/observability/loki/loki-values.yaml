@@ -1,0 +1,38 @@
+# Loki en modo single binary (un pod), en el nodepool infra.
+#   helm upgrade --install loki grafana/loki -n monitoring -f TP3/observability/loki/loki-values.yaml
+deploymentMode: SingleBinary
+
+loki:
+  auth_enabled: false
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: filesystem
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index: { prefix: index_, period: 24h }
+
+singleBinary:
+  replicas: 1
+  nodeSelector: { pool: infra }
+  tolerations: [{ key: pool, operator: Equal, value: infra, effect: NoSchedule }]
+  persistence:
+    # "standard" es pd-standard (HDD): no consume la cuota SSD_TOTAL_GB de la region.
+    storageClass: standard
+    size: 10Gi
+
+# Modo SimpleScalable apagado: todo corre en el single binary.
+read: { replicas: 0 }
+write: { replicas: 0 }
+backend: { replicas: 0 }
+
+# Componentes opcionales que solo suman pods y memoria.
+gateway: { enabled: false }
+lokiCanary: { enabled: false }
+test: { enabled: false }
+chunksCache: { enabled: false }
+resultsCache: { enabled: false }

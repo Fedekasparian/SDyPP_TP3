@@ -53,7 +53,7 @@ docker-compose.yml       stack completo local
 
 **Falta:**
 - Evidencia R4 en GKE (`K8S=1 bash TP3/scripts/r4_evidence.sh` → `TP3/evidencia/r4_gke.txt`). La corrida registrada es en Docker Compose.
-- Capturas de CPU y memoria por pod y por nodo de Grafana en GKE, y el `terraform apply` del bootstrap para el binding de Prometheus.
+- Capturas de CPU y memoria por pod y por nodo de Grafana en GKE.
 - Validar la conexión VM → RabbitMQ local del esquema híbrido (Hit #2).
 
 ## Seguridad
