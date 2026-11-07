@@ -49,4 +49,4 @@ Los comandos completos están en [services/README.md](../services/README.md). Pa
 
 ## Alcance pendiente
 
-R4 en GKE se ejecutó el 07/11/2026 desde GitHub Actions, que se autentica por OIDC, genera los tokens dentro del pod backend y nunca los imprime. Se usó `K8S=1` contra el Ingress público: [gke/r4_gke.txt](../evidencia/gke/r4_gke.txt). No se provisionaron recursos GCP ni se modificó el frente C. El informe final y el video los integra D.
+R4 en GKE se ejecutó el 07/11/2026 desde GitHub Actions, que se autentica por OIDC, genera los tokens dentro del pod backend y nunca los imprime. Se usó `K8S=1` contra el Ingress público: [gke/r4_gke.txt](../evidencia/gke/r4_gke.txt). No se provisionaron recursos GCP ni se modificó el frente C. El informe final lo integra D.

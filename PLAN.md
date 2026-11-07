@@ -20,7 +20,7 @@ Ya hay mucho hecho, pero **nada está commiteado**: el único commit es "Initial
 - `contrato.md`/`openapi.yaml` (R3)
 - Evidencia de ImagePullBackOff (R1)
 - Consumidor "dashboard" del fanout, hoy un stub en `dlq_monitor/main.py:38-40`
-- READMEs por Hit, diagramas, informe y video
+- READMEs por Hit, diagramas e informe
 - Despliegue real en GCP y en k8s local
 
 ## Paso 0: hoy, lo hace Federico antes de repartir
@@ -87,7 +87,6 @@ Es independiente del resto, así que puede arrancar ya.
   - `summarize.py` arma la tabla p50/p95/p99, throughput, error rate y si se cumple el SLO (definir uno, por ejemplo p95 < 10 s y errores < 1%).
   - Documentar VUs, ramp-up y duración en `TP3/loadtest/README.md`.
 - **Informe** `TP3/informe.md` (o PDF): herramientas de IA usadas y cómo ayudaron, respuestas teóricas (NIST, cloud-native vs híbrido, cloud-bursting, CAP), tablas R5 y del Hit3, gráficos de Grafana, diagramas y conclusiones. Cada integrante aporta su sección; D integra.
-- **Video**: guion y grabación (D coordina). Tiene que mostrar R2, R4 y una corrida de R5 con Grafana en vivo.
 
 ---
 
@@ -96,8 +95,8 @@ Es independiente del resto, así que puede arrancar ya.
 |---|---|---|---|---|
 | Mar 20 (noche) | ex1–ex3 | contrato.md + arreglos | bootstrap GCP + vars de GitHub | k6 `scenario.js` local |
 | Mié 21 | ex4–ex5, sobel centralizado, README Hit1 | integración, SSE/dashboard, frontend | GKE + deploy + workers, local_up.sh | observabilidad en GKE, alertas |
-| Jue 22 | ayudar con R5/video, diagramas | evidencia R4 (local + GKE) | evidencia R1, diagrama híbrido | matriz R5 en GKE, informe |
-| Vie 23 | revisión final, video, README raíz con índice por Hit, entrega | | | |
+| Jue 22 | ayudar con R5, diagramas | evidencia R4 (local + GKE) | evidencia R1, diagrama híbrido | matriz R5 en GKE, informe |
+| Vie 23 | revisión final, README raíz con índice por Hit, entrega | | | |
 
 **Dependencias**: B y D pueden trabajar con docker-compose o minikube mientras C levanta GKE. La matriz R5 y la evidencia R4 en la nube necesitan GKE (jueves). Si GCP se traba, la Parte 1 local igual tiene que quedar completa.
 
@@ -109,4 +108,4 @@ Es independiente del resto, así que puede arrancar ya.
 - `kubectl get pods -o wide` en GKE: infra y apps en sus pools, workers como VMs que procesan.
 - `r1_evidence.sh` y `r4_evidence.sh` con salidas guardadas en `TP3/evidencia/`.
 - Matrix k6 con la tabla en el informe, Grafana con datos y una alerta disparada (captura).
-- Cada carpeta de Hit tiene README (cómo correr, diagrama, decisiones), además de `contrato.md`, el informe y el video en el repo.
+- Cada carpeta de Hit tiene README (cómo correr, diagrama, decisiones), además de `contrato.md` y el informe en el repo.

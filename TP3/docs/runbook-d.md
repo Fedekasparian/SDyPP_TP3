@@ -19,8 +19,7 @@ Guía de reproducción de la evidencia de la parte D. Todos los comandos son de
 | ✅ | **Tabla del Hit #3: 54 medidas + 66 declaradas = 120, ninguna `SIN MEDIR`** (ver abajo) |
 | ✅ | `summarize.py` separa las dos matrices; `gen_images.py` ya no se pasa del tamaño |
 | ✅ | **Caso c de R5**: un worker muerto con un fragmento sin ack, reentregado a otro ([evidencia](../evidencia/r5/caso_c_worker_muerto.txt), §8.4 del informe) |
-| 🟨 | Observabilidad en GKE: job `observability` propio en `deploy.yml`, secret de Grafana y `PROJECT` resueltos; falta un deploy que lo confirme y las capturas de CPU/memoria |
-| 🟨 | Video: guion en [guion-video.md](guion-video.md); falta grabarlo y subirlo |
+| ✅ | Observabilidad en GKE: stack desplegado por `deploy.yml`; capturas de CPU/memoria por pod y nodo en [evidencia/gke](../evidencia/gke/) |
 
 Pusheado a `feat/d-obs-load`. Los commits los hace D.
 
