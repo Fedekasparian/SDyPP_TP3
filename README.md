@@ -61,9 +61,7 @@ docker-compose.yml       stack completo local
 - Hit #4 en local (capturas de Grafana y alertas disparadas), matriz R5 (108 celdas) y tabla del Hit #3 (120 celdas): [informe](TP3/docs/informe.md), secciones 6 y 8.
 - Evidencia en GKE ([evidencia/gke](TP3/evidencia/gke/), workflow [evidencia-gke](.github/workflows/evidencia-gke.yml)): R4 con tres réplicas detrás del Ingress público, y CPU y memoria por pod y por nodo desde Prometheus.
 - Prometheus descubre las VMs workers con `gce_sd_configs`, y los logs de los pods se centralizan en Loki con Fluent Bit ([observability/loki](TP3/observability/loki/)).
-
-**Falta:**
-- Validar la conexión VM → RabbitMQ local del esquema híbrido (Hit #2).
+- Hit #2 híbrido validado: una VM de GCP consume de la RabbitMQ local por Tailscale, con tiempos de los escenarios local, nube y mixto ([hit2](TP3/hit2/README.md#cómo-llegan-las-vms-a-la-rabbitmqredis-locales), [evidencia](TP3/evidencia/hit2/)).
 
 ## Seguridad
 - `.env`, `*.tfstate`, `*.tfvars` y las claves están en `.gitignore`. **gitleaks** corre en cada push y PR, y falla si detecta un secreto.

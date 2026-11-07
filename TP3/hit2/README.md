@@ -60,8 +60,28 @@ restringido por firewall. En todos los casos se pasa esa dirección como `rabbit
 No exponer Redis sin password (el Deployment de Redis del overlay local no la tiene: agregar
 `--requirepass` antes de abrirlo) ni dejar AMQP abierto a todo Internet.
 
-> **Pendiente de validar:** la conectividad VM → RabbitMQ local depende de tu red. Probarla con
-> `worker_count=1` y comprobar en la UI de RabbitMQ que aparece el consumer de la VM.
+**Validado el 07/11/2026** con Tailscale: la VM `tp3-hibrido-0` (GCP, `us-central1-a`) consumió de
+la RabbitMQ local y escribió en la Redis local de un equipo Windows con Docker Desktop. Cada
+escenario procesa 6 jobs concurrentes × 5 imágenes de 1 MB × 4 fragmentos (`sobel`). Evidencia en
+[evidencia/hit2/](../evidencia/hit2/):
+
+| Escenario | Workers | Jobs | Lote completo | p50 por job | max por job |
+|---|---|---|---|---|---|
+| [local](../evidencia/hit2/local.txt) | 2 locales | 6/6 | 2,50 s | 1,96 s | 2,45 s |
+| [nube](../evidencia/hit2/nube.txt) | solo la VM | 6/6 | 197,60 s | 117,07 s | 197,52 s |
+| [mixto](../evidencia/hit2/mixto.txt) | 2 locales + VM | 6/6 | 2,91 s | 1,79 s | 2,83 s |
+
+La columna `workers` de cada archivo muestra qué worker tocó cada job (`tp3-hibrido-0` = la VM).
+En `nube`, el procesamiento de un job tarda ~30 s contra ~0,25 s en local: cada fragmento de 1 MB
+va y vuelve por Internet entre la Redis local y la VM, así que el costo es de red y no de CPU. El
+cloud-bursting conviene para operaciones con mucho cómputo por byte; para Sobel sobre imágenes
+chicas, la latencia de la red domina. En `mixto` la VM participó en 1 de los 6 jobs: los workers
+locales vacían la cola antes de que la VM termine sus fragmentos.
+
+> Docker Desktop hace NAT del puerto publicado, así que en la lista de conexiones AMQP la VM
+> aparece como `172.20.0.1` (el gateway de Docker) y no con su IP `100.x`. Lo que la identifica es
+> el `worker_id` `tp3-hibrido-0` y la quinta conexión en el escenario `nube`, donde no hay
+> workers locales.
 
 ## Qué cambia en el Hit #3 (100% nube)
 

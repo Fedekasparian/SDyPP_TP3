@@ -1,0 +1,41 @@
+# Hit #2 hibrido - escenario nube - 2026-11-07T20:56:33Z
+# 6 jobs concurrentes x 5 archivos (1MB.png, 979184 bytes) x 4 fragmentos, op sobel
+
+## Tailscale (este equipo y la VM)
+100.108.154.84  desktop-ccp5kic  mateoponti122@  windows  -                                                       
+100.119.68.74   tp3-hibrido-0    mateoponti122@  linux    active; direct 136.112.123.81:41641, tx 16784 rx 31824
+
+## Workers locales (docker compose)
+(ninguno)
+
+## Consumidores de tasks.tp3-worker en la RabbitMQ LOCAL
+name	consumers	messages
+split.requests	1	0
+results.joiner	1	0
+tasks.parked	0	0
+results.monitor	1	0
+tasks.tp3-worker	3	0
+tasks.dlq	1	0
+
+## Conexiones AMQP (peer_host 100.x = VM de GCP por Tailscale)
+name	peer_host	state
+172.20.0.5:58916 -> 172.20.0.3:5672	172.20.0.5	running
+172.20.0.6:59806 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.6:59820 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.8:35976 -> 172.20.0.3:5672	172.20.0.8	running
+172.20.0.1:56306 -> 172.20.0.3:5672	172.20.0.1	running
+
+## Jobs
+job_id	estado	e2e_s	split	queue	processing	join	workers
+90fbf46926194176aa323f2bbb39b8ef	done	132.79	0.2069	101.0954	29.8898	0.1568	tp3-hibrido-0
+4bdd870a09f4408f95bd1b9274139935	done	69.25	0.2087	36.8859	31.3462	0.1585	tp3-hibrido-0
+51915e16d1b542438865a9d59f875910	done	36.84	0.22	1.1394	34.8181	0.1588	tp3-hibrido-0
+e75f2e8b1d2a41589db7e2460a9d183b	done	101.36	0.2191	69.1499	31.016	0.1554	tp3-hibrido-0
+8961b9aa24bb490b9b189dab01f03832	done	197.52	0.2041	162.9907	32.3746	0.1552	tp3-hibrido-0
+ea9dee0131d44b549e96cddf94a321ce	done	163.7	0.2121	131.7973	30.2575	0.1538	tp3-hibrido-0
+
+## Resumen
+jobs done: 6/6 | lote completo en 197.60 s
+e2e por job: p50 117.07 s | max 197.52 s
+jobs en los que participo cada worker (los tp3-hibrido-* son VMs de GCP):
+  tp3-hibrido-0	6	NUBE (GCP)

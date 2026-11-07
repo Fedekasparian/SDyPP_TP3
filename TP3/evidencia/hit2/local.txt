@@ -1,0 +1,53 @@
+# Hit #2 hibrido - escenario local - 2026-11-07T20:35:30Z
+# 6 jobs concurrentes x 5 archivos (1MB.png, 979184 bytes) x 4 fragmentos, op sobel
+
+## Tailscale (este equipo y la VM)
+100.99.113.83   mateop             sdgrupoglobal@  windows  -                                                              
+100.79.41.92    agustina           sdgrupoglobal@  windows  -                                                              
+100.104.61.29   desktop-jq05oqq    sdgrupoglobal@  windows  -                                                              
+100.126.21.33   juancruz           sdgrupoglobal@  windows  offline, last seen 57d ago                                     
+100.118.61.111  justi-mac          sdgrupoglobal@  macOS    offline, last seen 18d ago                                     
+100.88.75.3     lenovo-juan        sdgrupoglobal@  linux    active; relay "sao"; offline, last seen 22h ago, tx 3900 rx 0  
+100.78.246.64   mateon             sdgrupoglobal@  linux    offline, last seen 15d ago                                     
+100.120.186.92  meizers-max-g0405  sdgrupoglobal@  linux    offline, last seen 25d ago                                     
+100.91.228.65   salvador-1         sdgrupoglobal@  windows  offline, last seen 49d ago                                     
+100.91.134.43   salvador           sdgrupoglobal@  linux    offline, last seen 6d ago                                      
+100.101.15.93   tomas              sdgrupoglobal@  linux    offline, last seen 45d ago
+
+## Workers locales (docker compose)
+tp3-worker-1	Up 49 seconds
+tp3-worker-2	Up 48 seconds
+
+## Consumidores de tasks.tp3-worker en la RabbitMQ LOCAL
+name	consumers	messages
+split.requests	1	0
+results.joiner	1	0
+tasks.parked	0	0
+results.monitor	1	0
+tasks.tp3-worker	2	0
+tasks.dlq	1	0
+
+## Conexiones AMQP (peer_host 100.x = VM de GCP por Tailscale)
+name	peer_host	state
+172.20.0.5:58916 -> 172.20.0.3:5672	172.20.0.5	running
+172.20.0.6:59806 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.6:59820 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.7:39128 -> 172.20.0.3:5672	172.20.0.7	running
+172.20.0.8:35976 -> 172.20.0.3:5672	172.20.0.8	running
+172.20.0.9:59712 -> 172.20.0.3:5672	172.20.0.9	running
+
+## Jobs
+job_id	estado	e2e_s	split	queue	processing	join	workers
+fa10f9aa29914b41a93fcb01feef4307	done	1.9	0.2256	0.0347	0.5298	0.1754	b6af164962aa-bcebef,de16051717a4-972673
+484024b2dfcb46b28cc840dc2aed4b85	done	1.96	0.2341	0.3156	0.2029	0.1681	b6af164962aa-bcebef,de16051717a4-972673
+e1728e34a70246a5939bc28370b75193	done	1.33	0.2359	0.0194	0.259	0.1805	b6af164962aa-bcebef,de16051717a4-972673
+7359753991b94d32a0aa40dd5f7863fd	done	2.45	0.2329	0.0029	0.2839	0.1611	b6af164962aa-bcebef,de16051717a4-972673
+0bbebf6de41a4c859f1e7cfee84d019e	done	2.45	0.2425	0.0593	0.2804	0.1604	b6af164962aa-bcebef,de16051717a4-972673
+5ff2ce19ce1c49b1ad61b4e49fe0fc74	done	1.97	0.2158	0.2538	0.236	0.1653	b6af164962aa-bcebef,de16051717a4-972673
+
+## Resumen
+jobs done: 6/6 | lote completo en 2.50 s
+e2e por job: p50 1.96 s | max 2.45 s
+jobs en los que participo cada worker (los tp3-hibrido-* son VMs de GCP):
+  b6af164962aa-bcebef	6	local
+  de16051717a4-972673	6	local

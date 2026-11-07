@@ -1,0 +1,46 @@
+# Hit #2 hibrido - escenario mixto - 2026-11-07T21:00:04Z
+# 6 jobs concurrentes x 5 archivos (1MB.png, 979184 bytes) x 4 fragmentos, op sobel
+
+## Tailscale (este equipo y la VM)
+100.108.154.84  desktop-ccp5kic  mateoponti122@  windows  -                                                            
+100.119.68.74   tp3-hibrido-0    mateoponti122@  linux    active; direct 136.112.123.81:41641, tx 30843096 rx 9033032
+
+## Workers locales (docker compose)
+tp3-worker-1	Up 10 seconds
+tp3-worker-2	Up 10 seconds
+
+## Consumidores de tasks.tp3-worker en la RabbitMQ LOCAL
+name	consumers	messages
+split.requests	1	0
+results.joiner	1	0
+tasks.parked	0	0
+results.monitor	1	0
+tasks.tp3-worker	3	0
+tasks.dlq	1	0
+
+## Conexiones AMQP (peer_host 100.x = VM de GCP por Tailscale)
+name	peer_host	state
+172.20.0.5:58916 -> 172.20.0.3:5672	172.20.0.5	running
+172.20.0.6:59806 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.6:59820 -> 172.20.0.3:5672	172.20.0.6	running
+172.20.0.8:35976 -> 172.20.0.3:5672	172.20.0.8	running
+172.20.0.1:56306 -> 172.20.0.3:5672	172.20.0.1	running
+172.20.0.7:47216 -> 172.20.0.3:5672	172.20.0.7	running
+172.20.0.9:39948 -> 172.20.0.3:5672	172.20.0.9	running
+
+## Jobs
+job_id	estado	e2e_s	split	queue	processing	join	workers
+7bdf6c042e1c4e4f94ab891338691e01	done	1.33	0.2303	0.0034	0.1453	0.165	42cabd1df94f-87533f,6914d8523964-b85a1e
+9a9357ea6edf4b30a183b355211f4541	done	2.17	0.2385	0.0036	0.139	0.1571	42cabd1df94f-87533f,6914d8523964-b85a1e
+cea6dcc7f3954fae8624c939b04fd893	done	1.84	0.2302	0.0044	0.144	0.1701	42cabd1df94f-87533f,6914d8523964-b85a1e
+33743fb2a2f14087a8ab51d23d0d20a7	done	2.83	0.2235	0.0074	2.1014	0.1508	42cabd1df94f-87533f,6914d8523964-b85a1e,tp3-hibrido-0
+650c668ef68d4c26828f12bac523a557	done	1.26	0.2265	0.0038	0.144	0.1669	42cabd1df94f-87533f,6914d8523964-b85a1e
+3ddbe513747f430b95ba6bab611ef905	done	1.74	0.2409	0.0045	0.1406	0.1614	42cabd1df94f-87533f,6914d8523964-b85a1e
+
+## Resumen
+jobs done: 6/6 | lote completo en 2.91 s
+e2e por job: p50 1.79 s | max 2.83 s
+jobs en los que participo cada worker (los tp3-hibrido-* son VMs de GCP):
+  42cabd1df94f-87533f	6	local
+  6914d8523964-b85a1e	6	local
+  tp3-hibrido-0	1	NUBE (GCP)
