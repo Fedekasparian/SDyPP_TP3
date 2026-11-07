@@ -5,16 +5,18 @@ workers en VM. Grabar con OBS (pantalla completa y micrófono). Antes de grabar:
 
 ```bash
 # 1) Estado: el cluster arriba, 2 VMs workers y la URL respondiendo
-curl http://<IP>/api/health          # {"backend":"ok","redis":"ok","rabbitmq":"ok"}
-# 2) Grafana en local (port-forward al pod)
+curl http://136.69.20.245/api/health          # {"backend":"ok","redis":"ok","rabbitmq":"ok"}
+# 2) Grafana: publica en http://136.80.214.178 (usuario admin). La password:
 gcloud container clusters get-credentials tp3 --zone us-central1-a --project tp3distribuidos
-kubectl -n monitoring port-forward deploy/kube-prometheus-stack-grafana 3000:3000
 kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d
 # 3) Tokens: generarlos en una terminal FUERA de cámara (no mostrarlos en el video)
-export ADMIN_TOKEN=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" admin admin)
-export USER_A=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" alice user)
-export USER_B=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" bob user)
-export B=http://<IP>/api
+export ADMIN_TOKEN=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" admin admin | tr -d '\r')
+export USER_A=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" alice user | tr -d '\r')
+export USER_B=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" bob user | tr -d '\r')
+export B=http://136.69.20.245/api
+# 4) Prometheus por port-forward (lo usa prom_celda.py en el bloque 3) y Docker Desktop
+#    prendido (k6 corre en un contenedor si no esta instalado)
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
 Dejar abiertos: una terminal, Grafana en el dashboard **TP3** (rango `now-15m`, refresco 5 s) y
@@ -25,7 +27,7 @@ la consola de GCP en *Compute Engine → VM instances*.
 - `kubectl -n tp3 get pods -o wide` → las apps en `apps`; **no hay pods de worker**.
 - En la consola de GCP: las VMs `tp3-worker-0/1` fuera del cluster. En Grafana, *Status → Targets*
   muestra el job `tp3-vm-workers` en `up`.
-- Abrir `http://<IP>/` (el front) y subir una imagen para mostrar el flujo de punta a punta.
+- Abrir http://136.69.20.245/ (el front) y subir una imagen para mostrar el flujo de punta a punta.
 
 ## 1. R2: validación antes de encolar (1,5 min)
 Mostrar que cada request inválido recibe un 400/413 claro y que **la cola no se mueve**. Para eso,
@@ -55,11 +57,11 @@ Una celda pesada, para que se vea la saturación. En pantalla dividida, la termi
 ```bash
 cd TP3/loadtest
 py gen_images.py 10KB
-SMOKE=1 MODE=none BASE_URL=$B RESULTS_DIR=results-video DECLARADAS_CSV= \
-  V1_LIST=10KB VA_LIST=10 VC_LIST=50 CELL_HOOK="py prom_celda.py" ./run_matrix.sh
+QUICK=1 MODE=none BASE_URL=$B RESULTS_DIR=results-video DECLARADAS_CSV= JOB_TIMEOUT_S=60 \
+  V1_LIST=10KB V3_LIST=2 VA_LIST=10 VB_LIST=sobel VC_LIST=50 CELL_HOOK="py prom_celda.py" ./run_matrix.sh
 ```
-(`prom_celda.py` necesita el port-forward de Prometheus en 9090:
-`kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090`.)
+(Sin `SMOKE=1`: el humo guarda la celda con prefijo `smoke_` y `summarize.py` no la mostraría en
+`summary.md`. `prom_celda.py` usa el port-forward de Prometheus del paso 4.)
 
 Narrar en Grafana, en este orden:
 1. **Mensajes publicados vs. consumidos** de RabbitMQ: los publicados suben y los consumidos se
@@ -71,8 +73,11 @@ Narrar en Grafana, en este orden:
 5. Mostrar la tabla completa de GKE (`results-gke/summary.md`) y la conclusión del informe (§8.7).
 
 ## 4. Cierre (30 s)
-Mencionar el Hit 2 híbrido (`TP3/evidencia/hit2/`: la VM de GCP consumiendo de la RabbitMQ local
-por Tailscale, con tiempos), y que el cluster queda levantado para la revisión.
+Mostrar el Hit 2 híbrido en `TP3/hit2/README.md` (tabla de la corrida híbrida) y abrir
+`TP3/evidencia/hit2/nube.txt`: la VM `tp3-hibrido-0` de GCP consumió de la RabbitMQ local por
+Tailscale. Comentar los tiempos: local 1,96 s por job, solo nube 117 s (cada fragmento de 1 MB va y
+vuelve por Internet a la Redis local) y mixto 1,79 s. Cerrar diciendo que el cluster queda
+levantado para la revisión.
 
 Subir el video a YouTube como **no listado** o a Drive con acceso por link, y pegar el link en el
-README (sección "Entrega").
+README (sección "Despliegue público (GKE)").
