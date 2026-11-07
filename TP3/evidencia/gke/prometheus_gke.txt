@@ -1,0 +1,46 @@
+# Prometheus en GKE · 2026-11-07T15:07:27Z
+## CPU por pod (cores)
+query: sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="tp3",container!=""}[2m]))
+pod=frontend-f7f95456c-dz6hp	0.0001662005593288066
+pod=frontend-f7f95456c-2xg6c	0.0001734181799368835
+pod=redis-0	0.007249798718687075
+pod=rabbitmq-0	0.05452021746999059
+pod=backend-67ff7c6f5c-q9rjj	0.004984318247857037
+pod=dlq-monitor-5f5f58cdd5-7c7vk	0.0006282158142671185
+pod=split-64b67cf75-7vtpr	0.0011587217830872666
+pod=backend-67ff7c6f5c-9x9rc	0.004931530093739113
+pod=joiner-6769c47cd6-2vq8j	0.0003383930421558854
+pod=backend-67ff7c6f5c-wcz4x	0.004964550517647865
+pod=split-64b67cf75-4kdz5	0.0012506441857977712
+pod=joiner-6769c47cd6-j6v82	0.0003197247411179809
+
+## Memoria por pod (bytes)
+query: sum by (pod) (container_memory_working_set_bytes{namespace="tp3",container!=""})
+pod=frontend-f7f95456c-dz6hp	3059712
+pod=frontend-f7f95456c-2xg6c	3276800
+pod=redis-0	12840960
+pod=rabbitmq-0	123904000
+pod=backend-67ff7c6f5c-q9rjj	131543040
+pod=dlq-monitor-5f5f58cdd5-7c7vk	28450816
+pod=split-64b67cf75-7vtpr	35291136
+pod=backend-67ff7c6f5c-9x9rc	131153920
+pod=joiner-6769c47cd6-2vq8j	35672064
+pod=backend-67ff7c6f5c-wcz4x	131276800
+pod=split-64b67cf75-4kdz5	34832384
+pod=joiner-6769c47cd6-j6v82	35667968
+
+## CPU por nodo (fraccion)
+query: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m]))
+instance=10.128.15.219:9100	0.1383333333333333
+instance=10.128.15.218:9100	0.10894444444444784
+
+## Memoria por nodo (fraccion)
+query: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes
+container=node-exporter,endpoint=http-metrics,instance=10.128.15.219:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-m8nhm,service=kube-prometheus-stack-prometheus-node-exporter	0.29068872690619896
+container=node-exporter,endpoint=http-metrics,instance=10.128.15.218:9100,job=node-exporter,namespace=monitoring,pod=kube-prometheus-stack-prometheus-node-exporter-nbd64,service=kube-prometheus-stack-prometheus-node-exporter	0.2864084042711681
+
+## Tareas procesadas por servicio (total)
+query: sum by (service) (tasks_processed_total)
+service=split	41
+
+## Targets del job tp3-vm-workers (VMs fuera del cluster)

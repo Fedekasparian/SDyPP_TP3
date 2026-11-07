@@ -141,16 +141,23 @@ jobs:
       - name: Capturas de Grafana (Chromium headless)
         continue-on-error: true
         run: |
-          kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80 >/dev/null 2>&1 &
           GF_PASS=$(kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)
           echo "::add-mask::$GF_PASS"; export GF_PASS
           pip install -q playwright && python -m playwright install --with-deps chromium >/dev/null
+          # Grafana tiene IP publica (Service LoadBalancer); si no, port-forward
+          GF_IP=$(kubectl -n monitoring get svc kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          if [ -n "$GF_IP" ]; then export GF_URL="http://$GF_IP"; else
+            kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80 >/dev/null 2>&1 &
+            export GF_URL="http://localhost:3000"
+          fi
+          for i in $(seq 1 30); do curl -sf "$GF_URL/api/health" >/dev/null && break; sleep 5; done
+          echo "Grafana: $(curl -s "$GF_URL/api/health" | tr -d '\n')"
           python - <<'EOF'
           import base64, os
           from playwright.sync_api import sync_playwright
           out = os.environ["OUT"]
           auth = base64.b64encode(f"admin:{os.environ['GF_PASS']}".encode()).decode()
-          base = "http://localhost:3000"
+          base = os.environ["GF_URL"]
           rng = "orgId=1&from=now-30m&to=now&theme=light"
           shots = {"dashboard_completo": f"/d/tp3-main/tp3?{rng}&kiosk"}
           names = {1: "cpu_por_pod", 2: "memoria_por_pod", 3: "cpu_por_nodo", 4: "memoria_por_nodo",

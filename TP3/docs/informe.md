@@ -162,7 +162,7 @@ kube-prometheus-stack y `ServiceMonitor`s; en docker-compose, con el perfil `obs
 | `rabbitmq` | `rabbitmq:15692/metrics` | Profundidad **por cola**, publicados y consumidos. |
 
 Las métricas propias (`tasks_queued`, `tasks_processed_total`, `task_errors_total`
-y los histogramas de latencia) están en [`tp3common/metrics.py`](../services/tp3common/metrics.py).
+y los histogramas de latencia) están en [`tp3common/metrics.py`](../services/common/tp3common/metrics.py).
 
 Dos decisiones de instrumentación que vale la pena justificar:
 
@@ -178,6 +178,24 @@ Dos decisiones de instrumentación que vale la pena justificar:
 - **Descubrimiento por DNS para los consumidores.** Es lo que permite que la
   variable V3 de la matriz (cantidad de workers) se mueva entre 1 y 8 sin
   reconfigurar Prometheus.
+
+**En GKE** cambian dos cosas. Las apps, RabbitMQ y Redis se raspan con
+`ServiceMonitor`s ([servicemonitors.yaml](../observability/servicemonitors.yaml)),
+y los workers que corren en **VMs fuera del cluster** se descubren con
+`gce_sd_configs` (job `tp3-vm-workers`, filtro `labels.app = "tp3-worker"`). Para
+que Prometheus pueda listar las instancias, su KSA se mapea por Workload Identity
+al SA `tp3-gke-nodes`, que tiene `roles/compute.viewer` (binding `prometheus_wi`
+en [bootstrap/main.tf](../infra/terraform/bootstrap/main.tf)). Sin ese binding, el
+job queda sin targets y GCE responde 403 a `iam.serviceAccounts.getAccessToken`.
+Con el binding, `tp3-worker-0` y `tp3-worker-1` aparecen `up`.
+
+**Logs centralizados (extra).** Además de las métricas, Fluent Bit (DaemonSet)
+manda los logs de los pods a **Loki**, y se consultan desde el mismo Grafana
+(*Explore → Loki*, por ejemplo `{namespace="tp3", container="backend"} |= "error"`).
+Esto complementa el requisito de logging en memoria y en disco: el log en disco de
+cada pod se pierde cuando el pod muere, y en Loki queda. Límite: los workers en VMs
+no mandan logs a Loki, porque Fluent Bit corre solo en los nodos del cluster.
+Detalle en [observability/loki](../observability/loki/).
 
 ### 6.2 El dashboard
 
