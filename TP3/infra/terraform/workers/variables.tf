@@ -55,6 +55,13 @@ variable "spot" {
   default = true
 }
 
+# false: la VM sale a internet por el Cloud NAT `tp3-nat` (lo crea gke_up.sh) y no consume
+# IP publica. La cuota regional es de 8 IPs y los nodos de GKE ya usan varias: con V3=6 no entran.
+variable "external_ip" {
+  type    = bool
+  default = true
+}
+
 # --- Modo hibrido (Hit #2): la VM llega a la RabbitMQ/Redis de un equipo local por Tailscale ---
 variable "name_prefix" {
   type        = string

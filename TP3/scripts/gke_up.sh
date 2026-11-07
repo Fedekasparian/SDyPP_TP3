@@ -29,6 +29,15 @@ done
 gcloud compute addresses describe tp3-ingress --global >/dev/null 2>&1 \
   || gcloud compute addresses create tp3-ingress --global --quiet
 
+# Cloud NAT: las VMs workers sin IP publica (external_ip=false) salen a internet por aca.
+# La cuota de IPs publicas de la region (8) no alcanza para los nodos de GKE + 6 workers.
+R="${Z%-*}"
+gcloud compute routers describe tp3-router --region "$R" >/dev/null 2>&1 \
+  || gcloud compute routers create tp3-router --network default --region "$R" --quiet
+gcloud compute routers nats describe tp3-nat --router tp3-router --region "$R" >/dev/null 2>&1 \
+  || gcloud compute routers nats create tp3-nat --router tp3-router --region "$R" \
+       --auto-allocate-nat-external-ips --nat-all-subnet-ip-ranges --quiet
+
 # Apps: si algun rollout quedo trabado (pods Pending por un nodo preemptado), el
 # restart los reprograma. Se reintenta una vez antes de fallar.
 kubectl -n tp3 rollout restart deploy/backend deploy/split deploy/joiner deploy/dlq-monitor deploy/frontend

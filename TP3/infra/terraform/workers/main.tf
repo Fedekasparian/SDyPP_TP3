@@ -23,7 +23,11 @@ resource "google_compute_instance" "worker" {
 
   network_interface {
     network = "default"
-    access_config {} # IP publica efimera para salir a internet (apt, registry)
+    # IP publica efimera para salir a internet (apt, registry). Sin ella, sale por Cloud NAT.
+    dynamic "access_config" {
+      for_each = var.external_ip ? [1] : []
+      content {}
+    }
   }
 
   scheduling {

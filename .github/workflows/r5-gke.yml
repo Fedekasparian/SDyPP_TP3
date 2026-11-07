@@ -28,6 +28,7 @@ env:
   TF_VAR_workers_service_account: ${{ vars.WORKERS_SA }}
   TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:latest
   TF_VAR_worker_count: "2"
+  TF_VAR_external_ip: "false"   # salen por Cloud NAT: con IP publica, V3=6 excede la cuota regional
 
 jobs:
   r5:
@@ -110,7 +111,11 @@ jobs:
           CELL_TIMEOUT: "240"
           K6_MEMORY: 12g
           CELL_HOOK: python3 prom_celda.py
-        run: mkdir -p TP3/loadtest/results-gke && bash TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/loadtest/results-gke/corrida.log
+        # pipefail: sin esto el `| tee` tapaba el error de run_matrix.sh y el paso daba success
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p TP3/loadtest/results-gke && bash TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/loadtest/results-gke/corrida.log
 
       - name: Contexto (VMs y pods al final)
         if: always()
