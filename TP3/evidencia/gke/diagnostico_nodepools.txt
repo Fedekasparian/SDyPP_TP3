@@ -1,0 +1,99 @@
+NAME   MACHINE_TYPE   DISK_SIZE_GB  NODE_VERSION
+apps   e2-standard-2  100           1.36.4-gke.2046003
+infra  e2-standard-2  100           1.36.4-gke.2046003
+## pool infra
+config:
+  machineType: e2-standard-2
+  spot: true
+instanceGroupUrls:
+- https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instanceGroupManagers/gke-tp3-infra-7d17185a-grp
+status: RUNNING
+currentActions:
+  abandoning: 0
+  creating: 0
+  creatingWithoutRetries: 0
+  deleting: 0
+  none: 0
+  recreating: 0
+  refreshing: 0
+  restarting: 0
+  resuming: 0
+  starting: 0
+  stopping: 0
+  suspending: 0
+  verifying: 0
+status:
+  allInstancesConfig:
+    effective: true
+  isStable: true
+  stateful:
+    hasStatefulConfig: false
+    perInstanceConfigs:
+      allEffective: true
+  versionTarget:
+    isReached: true
+targetSize: 0
+Listed 0 items.
+## pool apps
+autoscaling: {}
+config:
+  machineType: e2-standard-2
+  spot: true
+instanceGroupUrls:
+- https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instanceGroupManagers/gke-tp3-apps-58bb8929-grp
+status: RUNNING
+currentActions:
+  abandoning: 0
+  creating: 0
+  creatingWithoutRetries: 0
+  deleting: 0
+  none: 1
+  recreating: 0
+  refreshing: 0
+  restarting: 0
+  resuming: 0
+  starting: 0
+  stopping: 0
+  suspending: 0
+  verifying: 0
+status:
+  allInstancesConfig:
+    effective: true
+  isStable: true
+  stateful:
+    hasStatefulConfig: false
+    perInstanceConfigs:
+      allEffective: true
+  versionTarget:
+    isReached: true
+targetSize: 1
+INSTANCE_URL                                                                                                             ACTION    ERROR_CODE      ERROR_MESSAGE                                                                                                               TIMESTAMP                      INSTANCE_TEMPLATE                                                                                                           VERSION_NAME
+https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instances/gke-tp3-apps-58bb8929-q8l7  CREATING  QUOTA_EXCEEDED  Instance 'gke-tp3-apps-58bb8929-q8l7' creation failed: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 300.0 in region us-central1.  2026-11-05T15:31:22.140-08:00  https://www.googleapis.com/compute/v1/projects/tp3distribuidos/regions/us-central1/instanceTemplates/gke-tp3-apps-340ee0bd
+https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instances/gke-tp3-apps-58bb8929-q8l7  CREATING  QUOTA_EXCEEDED  Instance 'gke-tp3-apps-58bb8929-q8l7' creation failed: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 300.0 in region us-central1.  2026-11-05T15:29:35.565-08:00  https://www.googleapis.com/compute/v1/projects/tp3distribuidos/regions/us-central1/instanceTemplates/gke-tp3-apps-340ee0bd
+https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instances/gke-tp3-apps-58bb8929-q8l7  CREATING  QUOTA_EXCEEDED  Instance 'gke-tp3-apps-58bb8929-q8l7' creation failed: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 300.0 in region us-central1.  2026-11-05T15:29:12.826-08:00  https://www.googleapis.com/compute/v1/projects/tp3distribuidos/regions/us-central1/instanceTemplates/gke-tp3-apps-340ee0bd
+https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instances/gke-tp3-apps-58bb8929-7knx  CREATING  QUOTA_EXCEEDED  Instance 'gke-tp3-apps-58bb8929-7knx' creation failed: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 300.0 in region us-central1.  2026-11-05T14:31:31.374-08:00  https://www.googleapis.com/compute/v1/projects/tp3distribuidos/regions/us-central1/instanceTemplates/gke-tp3-apps-340ee0bd
+https://www.googleapis.com/compute/v1/projects/tp3distribuidos/zones/us-central1-a/instances/gke-tp3-apps-58bb8929-84jj  CREATING  QUOTA_EXCEEDED  Instance 'gke-tp3-apps-58bb8929-84jj' creation failed: Quota 'SSD_TOTAL_GB' exceeded.  Limit: 300.0 in region us-central1.  2026-11-05T13:36:28.359-08:00  https://www.googleapis.com/compute/v1/projects/tp3distribuidos/regions/us-central1/instanceTemplates/gke-tp3-apps-340ee0bd
+## Eventos Pending
+monitoring   25m         Warning   FailedScheduling   pod/kube-prometheus-stack-operator-59fd58cfc-sdl68              0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+monitoring   24m         Warning   FailedScheduling   pod/loki-0                                                      0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+monitoring   24m         Warning   FailedScheduling   pod/prometheus-kube-prometheus-stack-prometheus-0               0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+tp3          24m         Warning   FailedScheduling   pod/rabbitmq-0                                                  0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+tp3          25m         Warning   FailedScheduling   pod/redis-0                                                     0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. no new claims to deallocate, preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.
+## Discos (cuota SSD_TOTAL_GB cuenta pd-ssd y pd-balanced)
+NAME                                      ZONE           SIZE_GB  TYPE         USERS
+gke-tp3-apps-58bb8929-q8l7                us-central1-a  100      pd-balanced  gke-tp3-apps-58bb8929-q8l7
+pvc-686ac9b5-ae9e-4d2a-8348-7b7cb923876c  us-central1-a  8        pd-balanced
+pvc-97e0474b-e1e1-4bef-b903-bbd65ae24ca3  us-central1-a  10       pd-standard
+pvc-e2a56d02-f790-41f9-8218-8c4f1aeebaa4  us-central1-a  8        pd-balanced
+## Cuota regional
+CPUS	2.0/200.0
+IN_USE_ADDRESSES	1.0/8.0
+SSD_TOTAL_GB	116.0/300.0
+## VMs
+NAME                        ZONE           STATUS   MACHINE_TYPE
+gke-tp3-apps-58bb8929-q8l7  us-central1-a  RUNNING  e2-standard-2
+## PVCs
+NAMESPACE    NAME              STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+monitoring   storage-loki-0    Bound    pvc-97e0474b-e1e1-4bef-b903-bbd65ae24ca3   10Gi       RWO            standard       <unset>                 7d15h
+tp3          data-rabbitmq-0   Bound    pvc-e2a56d02-f790-41f9-8218-8c4f1aeebaa4   8Gi        RWO            standard-rwo   <unset>                 15d
+tp3          data-redis-0      Bound    pvc-686ac9b5-ae9e-4d2a-8348-7b7cb923876c   8Gi        RWO            standard-rwo   <unset>                 15d

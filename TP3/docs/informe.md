@@ -145,7 +145,7 @@ está en la sección 8.6 de este informe.
 
 La API valida antes de encolar y conserva estado en Redis. Cada request verifica un Bearer firmado con HMAC-SHA256, lo que permite usar cualquier réplica sin afinidad. Las llamadas bloqueantes de Redis/pika y el procesamiento de validación se ejecutan fuera del event loop. El consumidor del fanout guarda progreso en un Redis Stream con TTL; el frontend recibe snapshots mediante SSE y ofrece estadísticas para admin.
 
-La validación local incluye 58 pruebas (13 de integración con servicios reales), igualdad del resultado distribuido con el cálculo centralizado y evidencia R4 con tres backends. La ejecución R4 en GKE queda pendiente del despliegue de C. Detalles y límites: [parte-b.md](parte-b.md).
+La validación local incluye 58 pruebas (13 de integración con servicios reales), igualdad del resultado distribuido con el cálculo centralizado y evidencia R4 con tres backends. En GKE, R4 se corrió el 07/11/2026 desde el workflow [evidencia-gke.yml](../../.github/workflows/evidencia-gke.yml), contra el Ingress público y con el backend escalado a tres réplicas. Pasan las 13 verificaciones, con tres pods backend distintos y el job procesado por las VMs workers. Detalle en la sección 7 y en [evidencia/gke/r4_gke.txt](../evidencia/gke/r4_gke.txt). Detalles y límites: [parte-b.md](parte-b.md).
 
 ## 6. Hit #4: observabilidad (D)
 
@@ -162,7 +162,7 @@ kube-prometheus-stack y `ServiceMonitor`s; en docker-compose, con el perfil `obs
 | `rabbitmq` | `rabbitmq:15692/metrics` | Profundidad **por cola**, publicados y consumidos. |
 
 Las métricas propias (`tasks_queued`, `tasks_processed_total`, `task_errors_total`
-y los histogramas de latencia) están en [`tp3common/metrics.py`](../services/tp3common/metrics.py).
+y los histogramas de latencia) están en [`tp3common/metrics.py`](../services/common/tp3common/metrics.py).
 
 Dos decisiones de instrumentación que vale la pena justificar:
 
@@ -178,6 +178,24 @@ Dos decisiones de instrumentación que vale la pena justificar:
 - **Descubrimiento por DNS para los consumidores.** Es lo que permite que la
   variable V3 de la matriz (cantidad de workers) se mueva entre 1 y 8 sin
   reconfigurar Prometheus.
+
+**En GKE** cambian dos cosas. Las apps, RabbitMQ y Redis se raspan con
+`ServiceMonitor`s ([servicemonitors.yaml](../observability/servicemonitors.yaml)),
+y los workers que corren en **VMs fuera del cluster** se descubren con
+`gce_sd_configs` (job `tp3-vm-workers`, filtro `labels.app = "tp3-worker"`). Para
+que Prometheus pueda listar las instancias, su KSA se mapea por Workload Identity
+al SA `tp3-gke-nodes`, que tiene `roles/compute.viewer` (binding `prometheus_wi`
+en [bootstrap/main.tf](../infra/terraform/bootstrap/main.tf)). Sin ese binding, el
+job queda sin targets y GCE responde 403 a `iam.serviceAccounts.getAccessToken`.
+Con el binding, `tp3-worker-0` y `tp3-worker-1` aparecen `up`.
+
+**Logs centralizados (extra).** Además de las métricas, Fluent Bit (DaemonSet)
+manda los logs de los pods a **Loki**, y se consultan desde el mismo Grafana
+(*Explore → Loki*, por ejemplo `{namespace="tp3", container="backend"} |= "error"`).
+Esto complementa el requisito de logging en memoria y en disco: el log en disco de
+cada pod se pierde cuando el pod muere, y en Loki queda. Límite: los workers en VMs
+no mandan logs a Loki, porque Fluent Bit corre solo en los nodos del cluster.
+Detalle en [observability/loki](../observability/loki/).
 
 ### 6.2 El dashboard
 
@@ -210,18 +228,64 @@ Lo que muestran, que es lo que importa:
   un cuello de botella: `split` procesa un mensaje por request, mientras que
   worker, joiner y dlq-monitor procesan uno por fragmento.
 
-### 6.3 Limitación declarada: CPU y memoria por pod y por nodo
+### 6.3 CPU y memoria por pod y por nodo (GKE)
 
-Los paneles 1 a 4 (*CPU por pod*, *Memoria por pod*, *CPU por nodo*, *Memoria por
-nodo*) aparecen en **"No data"** en las capturas. No es un error del dashboard:
-esas series provienen de **cAdvisor** y **node-exporter**, que forman parte de
-kube-prometheus-stack y **solo existen dentro de un cluster de Kubernetes**. En
-docker-compose no hay pods ni nodos que medir, así que las consultas no devuelven
-series.
+En las capturas de docker-compose, los paneles 1 a 4 (*CPU por pod*, *Memoria por
+pod*, *CPU por nodo*, *Memoria por nodo*) aparecen en **"No data"**. Esas series
+salen de **cAdvisor** y **node-exporter**, que solo existen dentro de un cluster de
+Kubernetes. En GKE el mismo dashboard, sin cambios, sí tiene datos. Las consultas
+del 07/11/2026 están en
+[evidencia/gke/prometheus_gke.txt](../evidencia/gke/prometheus_gke.txt):
 
-Las queries quedaron escritas y validadas contra el esquema de
-kube-prometheus-stack: el dashboard se puebla solo al desplegarlo sobre el
-cluster, sin cambiarle nada.
+| Serie | Valor observado (en reposo, después de una carga corta) |
+|---|---|
+| CPU por pod | `rabbitmq-0` 0,055 cores; cada `backend` ~0,005; el resto por debajo de 0,002 |
+| Memoria por pod | `backend` ~131 MB por réplica (3 réplicas); `rabbitmq-0` 124 MB; split/joiner ~35 MB; frontend 3 MB |
+| CPU por nodo | nodo `infra` 13,8 %; nodo `apps` 10,9 % |
+| Memoria por nodo | `infra` 29 %; `apps` 29 % |
+
+La separación de nodegroups se ve en los datos: RabbitMQ y Redis corren en el
+nodo `infra` (10.128.15.219) y las apps en `apps` (10.128.15.218). Ver
+[contexto_gke_despues.txt](../evidencia/gke/contexto_gke_despues.txt).
+
+**Capturas del dashboard en GKE** ([evidencia/gke](../evidencia/gke/), últimos 30
+minutos del 07/11/2026): `grafana_dashboard_completo.png` y un panel por archivo
+(`grafana_cpu_por_pod.png`, `grafana_memoria_por_pod.png`,
+`grafana_cpu_por_nodo.png`, `grafana_memoria_por_nodo.png`,
+`grafana_rabbitmq_publicados_consumidos.png` y
+`grafana_latencia_fragmento_p50_p95_p99.png`). Muestran un experimento que no
+estaba planeado, pero que es útil:
+
+- Mientras no había VMs workers, `tasks.tp3-worker` subió a unos **330
+  mensajes** y se quedó ahí. Los jobs se aceptaban (202) y esperaban en la cola.
+  Ningún mensaje se perdió.
+- A las 15:31 el pipeline `workers` sumó `tp3-worker-0` y `tp3-worker-1`. La cola
+  **bajó a 0 en menos de un minuto** y aparecieron en el throughput worker, joiner
+  y dlq-monitor. Prometheus las ve en `up` por `gce_sd_configs` y contabiliza 492
+  fragmentos procesados por las VMs.
+- La latencia por fragmento en las VMs (e2-small) es de p50 ≈ 17 ms y p95 ≈ 24 ms.
+- *Tasa de errores* figura en "No data" porque no hubo ningún error: la serie
+  `task_errors_total` no existe hasta que ocurre el primero.
+
+Es el patrón de cloud-bursting del Hit #2 visto desde la observabilidad: la cola
+absorbe la demanda y la capacidad extra la drena cuando llega.
+
+**Incidente en GKE (07/11/2026).** Al ir a tomar esta evidencia, el pool `infra`
+estaba en 0 nodos, aunque en Terraform tiene `node_count = 1`: alguien lo había
+bajado a mano. Con eso RabbitMQ, Redis, Prometheus y Grafana quedaron en `Pending`,
+y backend, split y joiner en `CrashLoopBackOff` (más de 600 reinicios). Además, el
+05/11 GCP no pudo recrear nodos `apps` spot por la cuota regional `SSD_TOTAL_GB`
+(300 GB). Cada nodo lleva un disco `pd-balanced` de 100 GB, que cuenta como SSD.
+También faltaban todos los recursos que crean balanceadores: el Ingress, el
+Service de Grafana y los ILB `rabbitmq-internal` y `redis-internal`. Sin estos
+últimos, el pipeline `workers` no puede resolver a dónde conectar las VMs. El
+workflow volvió el pool al estado declarado (verificó antes la cuota: 116 de 300 GB
+usados) y recreó el Ingress y los ILB desde los manifiestos del repo. El diagnóstico completo está en
+[diagnostico_nodepools.txt](../evidencia/gke/diagnostico_nodepools.txt). Las
+lecciones son dos. Primero, los pods de infraestructura sin réplica fuera de su
+pool son un punto único de falla. Segundo, en una cuenta con cuota chica, los
+discos de 100 GB por nodo son la primera restricción, antes que la CPU: con
+`disk_size_gb = 30` entrarían el triple de nodos.
 
 ### 6.4 La alerta disparada
 
@@ -328,8 +392,18 @@ en local.
 | R1 | Captura de `ImagePullBackOff` y del pull exitoso | [r1-evidencia.md](r1-evidencia.md) |
 | R2 | Requests inválidos devuelven 400 y la cola no cambia | video, logs |
 | R3 | [contrato.md](contrato.md) | |
-| R4 | 13 verificaciones locales, tres backends distintos; GKE pendiente | [r4_local.txt](../evidencia/r4_local.txt), [parte B](parte-b.md) |
+| R4 | Local: 13/13. GKE: **13/13**, con 401, 403, aislamiento (404 en status, events y result), 30/30 lecturas repartidas entre **tres pods backend distintos** detrás del Ingress público, y el job procesado por las VMs workers (ver nota) | [r4_local.txt](../evidencia/r4_local.txt), [r4_gke.txt](../evidencia/gke/r4_gke.txt), [parte B](parte-b.md) |
 | R5 | Matriz completa | sección 8 |
+
+**Nota sobre R4 en GKE.** El script además envía un job y espera que termine. En
+GKE, los workers no son pods: corren en VMs fuera del cluster (Hit #3, pipeline
+`workers`). En la primera corrida del 07/11 no había VMs prendidas, y el resultado
+fue 10/11, con el job en `queued`
+([r4_gke_sin_workers.txt](../evidencia/gke/r4_gke_sin_workers.txt)). Es el
+comportamiento asincrónico esperado: el mensaje espera en RabbitMQ hasta que haya
+un consumidor. Con las dos VMs creadas por el pipeline `workers`, la corrida da
+**13/13** ([r4_gke.txt](../evidencia/gke/r4_gke.txt)): el job llega a `done`, se
+descarga el PNG y el SSE responde.
 
 ## 8. Análisis de desempeño (D)
 

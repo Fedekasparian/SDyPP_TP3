@@ -1,0 +1,21 @@
+deployment.apps/backend scaled
+deployment "backend" successfully rolled out
+NAME                       READY   STATUS    RESTARTS   AGE     IP           NODE                         NOMINATED NODE   READINESS GATES
+backend-67ff7c6f5c-9x9rc   1/1     Running   0          6m52s   10.48.0.32   gke-tp3-apps-58bb8929-q8l7   <none>           <none>
+backend-67ff7c6f5c-q9rjj   1/1     Running   0          7m5s    10.48.0.28   gke-tp3-apps-58bb8929-q8l7   <none>           <none>
+backend-67ff7c6f5c-wcz4x   1/1     Running   0          6m40s   10.48.0.34   gke-tp3-apps-58bb8929-q8l7   <none>           <none>
+R4 · 2026-11-07T15:02:55.989439+00:00 · base=http://8.233.15.127/api
+Replicas distintas requeridas: 3
+OK   Sin token -> HTTP 401
+OK   Token invalido -> HTTP 401
+OK   Usuario sin permiso admin -> HTTP 403
+OK   Admin consulta estadisticas -> HTTP 200
+OK   Submit asincronico -> HTTP 202
+job_id=3563e5e60bce4533ad67728aa017ef11
+OK   Aislamiento usuario B (status) -> HTTP 404
+OK   Aislamiento usuario B (/events) -> HTTP 404
+OK   Aislamiento usuario B (/result/0) -> HTTP 404
+OK   30 lecturas autorizadas del mismo job -> 30/30
+OK   Backends distintos observados -> backend-67ff7c6f5c-9x9rc, backend-67ff7c6f5c-q9rjj, backend-67ff7c6f5c-wcz4x
+FAIL Pipeline termina -> queued
+---- 10 OK, 1 FAIL

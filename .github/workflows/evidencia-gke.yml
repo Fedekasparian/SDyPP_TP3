@@ -1,0 +1,190 @@
+# Evidencia en GKE (R4 con 3 replicas y Hit #4 CPU/memoria por pod y por nodo).
+# Corre contra el cluster ya desplegado, sin cambiar nada salvo escalar backend a 3.
+# La salida queda como artifact `evidencia-gke` y se copia a TP3/evidencia/gke/.
+name: evidencia-gke
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cierre-entrega]
+    paths: [.github/workflows/evidencia-gke.yml]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  evidencia:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    env:
+      OUT: ${{ github.workspace }}/out
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/get-gke-credentials@v2
+        with: { cluster_name: tp3, location: "${{ vars.GKE_ZONE }}" }
+
+      - name: Contexto del cluster (pools infra/apps)
+        run: |
+          mkdir -p "$OUT"
+          {
+            echo "# $(date -u +%FT%TZ) · cluster tp3 · ${{ vars.GKE_ZONE }}"
+            echo "## Nodos (label pool)"; kubectl get nodes -L pool -o wide
+            echo; echo "## Pods tp3"; kubectl -n tp3 get pods -o wide
+            echo; echo "## Pods monitoring"; kubectl -n monitoring get pods -o wide
+            echo; echo "## Ingress"; kubectl -n tp3 get ingress
+          } | tee "$OUT/contexto_gke.txt"
+
+      - name: Diagnostico de node pools (solo lectura)
+        continue-on-error: true
+        run: |
+          {
+            gcloud container node-pools list --cluster tp3 --zone "${{ vars.GKE_ZONE }}"
+            for pool in infra apps; do
+              echo "## pool $pool"
+              gcloud container node-pools describe "$pool" --cluster tp3 --zone "${{ vars.GKE_ZONE }}" \
+                --format='yaml(status,statusMessage,initialNodeCount,autoscaling,config.spot,config.machineType,instanceGroupUrls)'
+              for ig in $(gcloud container node-pools describe "$pool" --cluster tp3 --zone "${{ vars.GKE_ZONE }}" --format='value(instanceGroupUrls)' | tr ';' ' '); do
+                name=$(basename "$ig")
+                gcloud compute instance-groups managed describe "$name" --zone "${{ vars.GKE_ZONE }}" --format='yaml(targetSize,currentActions,status)'
+                gcloud compute instance-groups managed list-errors "$name" --zone "${{ vars.GKE_ZONE }}" --limit 5
+              done
+            done
+            echo "## Eventos Pending"; kubectl get events -A --field-selector reason=FailedScheduling | tail -5
+            echo "## Discos (cuota SSD_TOTAL_GB cuenta pd-ssd y pd-balanced)"
+            gcloud compute disks list --format='table(name,zone.basename(),sizeGb,type.basename(),users.basename().list())'
+            echo "## Cuota regional"
+            gcloud compute regions describe us-central1 --format=json \
+              | jq -r '.quotas[] | select(.metric | test("^(SSD_TOTAL_GB|CPUS|IN_USE_ADDRESSES)$")) | "\(.metric)\t\(.usage)/\(.limit)"'
+            echo "## VMs"; gcloud compute instances list --format='table(name,zone.basename(),status,machineType.basename())'
+            echo "## PVCs"; kubectl get pvc -A
+          } 2>&1 | tee "$OUT/diagnostico_nodepools.txt"
+
+      # El pool infra tiene node_count = 1 en Terraform; si alguien lo bajo a 0, se vuelve al estado declarado.
+      - name: Levantar el stack (pool infra, RabbitMQ/Redis, apps e Ingress)
+        run: |
+          Z="${{ vars.GKE_ZONE }}"
+          if ! kubectl get nodes -l pool=infra --no-headers 2>/dev/null | grep -q .; then
+            gcloud container clusters resize tp3 --node-pool infra --num-nodes 1 --zone "$Z" --quiet
+          fi
+          for i in $(seq 1 60); do kubectl get nodes -l pool=infra --no-headers 2>/dev/null | grep -q ' Ready' && break; sleep 10; done
+          kubectl get nodes -L pool
+          kubectl -n tp3 rollout status statefulset/rabbitmq --timeout=600s
+          kubectl -n tp3 rollout status statefulset/redis --timeout=300s
+          # ILBs que usan las VMs workers (si se borraron, se recrean del manifiesto, como en deploy.yml)
+          kubectl apply -k TP3/k8s/infra
+          for s in rabbitmq-internal redis-internal; do
+            for i in $(seq 1 40); do
+              [ -n "$(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" ] && break; sleep 10
+            done
+            echo "$s -> $(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+          done
+          kubectl -n tp3 rollout restart deploy/backend deploy/split deploy/joiner deploy/dlq-monitor
+          for d in backend split joiner dlq-monitor frontend; do kubectl -n tp3 rollout status deploy/$d --timeout=300s; done
+          if ! kubectl -n tp3 get ingress tp3 >/dev/null 2>&1; then
+            kubectl kustomize TP3/k8s/overlays/gke | yq 'select(.kind == "Ingress")' | kubectl -n tp3 apply -f -
+          fi
+          for i in $(seq 1 60); do
+            IP=$(kubectl -n tp3 get ingress tp3 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+            [ -n "$IP" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://$IP/api/health")" = 200 ] && break
+            sleep 15
+          done
+          echo "Ingress http://$IP -> $(curl -s "http://$IP/api/health")"
+          kubectl -n monitoring rollout status statefulset/prometheus-kube-prometheus-stack-prometheus --timeout=600s
+          kubectl -n monitoring rollout status deploy/kube-prometheus-stack-grafana --timeout=600s
+          { echo "## Despues de levantar"; kubectl get nodes -L pool -o wide; kubectl -n tp3 get pods -o wide; kubectl -n tp3 get ingress; } \
+            | tee "$OUT/contexto_gke_arriba.txt"
+
+      - name: Tokens (generados dentro del backend, enmascarados)
+        run: |
+          gen() { kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" "$1" "$2" | tr -d '\r\n'; }
+          for v in "ADMIN_TOKEN admin admin" "USER_A_TOKEN alice user" "USER_B_TOKEN bob user"; do
+            set -- $v; t=$(gen "$2" "$3"); echo "::add-mask::$t"; echo "$1=$t" >> "$GITHUB_ENV"
+          done
+          IP=$(kubectl -n tp3 get ingress -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+          [ -n "$IP" ] || IP=$(kubectl -n tp3 get svc frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          [ -n "$IP" ] || { echo "::error::no hay Ingress ni LoadBalancer con IP"; exit 1; }
+          echo "BASE_URL=http://$IP/api" >> "$GITHUB_ENV"
+
+      - name: R4 con 3 replicas del backend detras del Ingress publico
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          K8S=1 bash TP3/scripts/r4_evidence.sh 2>&1 | tee "$OUT/r4_gke.txt"
+
+      - name: Carga corta para poblar el dashboard
+        run: |
+          for i in $(seq 1 40); do
+            curl -s -o /dev/null -w "%{http_code} " -H "Authorization: Bearer $USER_A_TOKEN" \
+              -F files=@TP3/loadtest/sample.png -F ops=sobel -F ops=blur "$BASE_URL/jobs" || true
+            sleep 2
+          done | tee "$OUT/carga_http_codes.txt"; echo
+          sleep 60
+
+      - name: Prometheus (CPU/memoria por pod y nodo, targets de VMs workers)
+        run: |
+          kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090 >/dev/null 2>&1 &
+          sleep 5
+          q() {
+            echo "## $1"; echo "query: $2"
+            curl -s --get localhost:9090/api/v1/query --data-urlencode "query=$2" \
+              | jq -r '.data.result[] | "\(.metric | del(.__name__) | to_entries | map("\(.key)=\(.value)") | join(","))\t\(.value[1])"'
+            echo
+          }
+          {
+            echo "# Prometheus en GKE · $(date -u +%FT%TZ)"
+            q "CPU por pod (cores)" 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="tp3",container!=""}[2m]))'
+            q "Memoria por pod (bytes)" 'sum by (pod) (container_memory_working_set_bytes{namespace="tp3",container!=""})'
+            q "CPU por nodo (fraccion)" '1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m]))'
+            q "Memoria por nodo (fraccion)" '1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes'
+            q "Tareas procesadas por servicio (total)" 'sum by (service) (tasks_processed_total)'
+            echo "## Targets del job tp3-vm-workers (VMs fuera del cluster)"
+            curl -s 'localhost:9090/api/v1/targets?scrapePool=tp3-vm-workers' \
+              | jq -r '.data.activeTargets[] | "\(.labels.instance)\t\(.scrapeUrl)\t\(.health)\t\(.lastError)"'
+          } | tee "$OUT/prometheus_gke.txt"
+
+      - name: Capturas de Grafana (Chromium headless)
+        continue-on-error: true
+        run: |
+          GF_PASS=$(kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)
+          echo "::add-mask::$GF_PASS"; export GF_PASS
+          pip install -q playwright && python -m playwright install --with-deps chromium >/dev/null
+          # Directo al pod: no depende de que exista el Service (LoadBalancer) de Grafana
+          kubectl -n monitoring port-forward deploy/kube-prometheus-stack-grafana 3000:3000 >/dev/null 2>&1 &
+          export GF_URL="http://localhost:3000"
+          for i in $(seq 1 30); do curl -sf "$GF_URL/api/health" >/dev/null && break; sleep 5; done
+          echo "Grafana: $(curl -s "$GF_URL/api/health" | tr -d '\n')"
+          python - <<'EOF'
+          import base64, os
+          from playwright.sync_api import sync_playwright
+          out = os.environ["OUT"]
+          auth = base64.b64encode(f"admin:{os.environ['GF_PASS']}".encode()).decode()
+          base = os.environ["GF_URL"]
+          rng = "orgId=1&from=now-30m&to=now&theme=light"
+          shots = {"dashboard_completo": f"/d/tp3-main/tp3?{rng}&kiosk"}
+          names = {1: "cpu_por_pod", 2: "memoria_por_pod", 3: "cpu_por_nodo", 4: "memoria_por_nodo",
+                   6: "rabbitmq_publicados_consumidos", 7: "latencia_fragmento_p50_p95_p99"}
+          for pid, n in names.items():
+              shots[n] = f"/d-solo/tp3-main/tp3?{rng}&panelId={pid}"
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              for name, path in shots.items():
+                  full = name == "dashboard_completo"
+                  ctx = b.new_context(extra_http_headers={"Authorization": f"Basic {auth}"},
+                                      viewport={"width": 1600, "height": 1800} if full else {"width": 1100, "height": 480})
+                  page = ctx.new_page()
+                  page.goto(base + path, wait_until="networkidle", timeout=60000)
+                  page.wait_for_timeout(6000)
+                  page.screenshot(path=f"{out}/grafana_{name}.png", full_page=full)
+                  print("ok", name)
+                  ctx.close()
+              b.close()
+          EOF
+          ls "$OUT"/grafana_*.png
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: evidencia-gke, path: out/ }

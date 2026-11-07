@@ -50,7 +50,7 @@ desde el mismo Grafana en **Explore → Loki**. Detalle en [observability/loki](
 Paso a paso en [docs/runbook-d.md](../docs/runbook-d.md).
 - [x] Correr la matriz y capturar el dashboard en vivo durante una corrida de k6 ([evidencia/hit4](../evidencia/hit4/)).
 - [x] Disparar `ColaDeTareasAlta` (apagar los workers y mandar carga) y capturarla ([alertas_transicion.log](../evidencia/hit4/alertas_transicion.log)).
-- [ ] Capturas de CPU y memoria por pod y por nodo en GKE: en docker-compose esos paneles
-      quedan vacíos porque salen de cAdvisor y node-exporter, que solo existen en Kubernetes.
+- [x] CPU y memoria por pod y por nodo en GKE ([evidencia/gke](../evidencia/gke/), informe 6.3): en
+      docker-compose esos paneles quedan vacíos porque salen de cAdvisor y node-exporter.
 - [x] `PROJECT` se reemplaza en el deploy, el SA de nodos tiene `roles/compute.viewer` y el
       binding de Workload Identity del bootstrap está aplicado: Prometheus scrapea las VMs workers (C).
