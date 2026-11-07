@@ -38,13 +38,38 @@ jobs:
             echo; echo "## Ingress"; kubectl -n tp3 get ingress
           } | tee "$OUT/contexto_gke.txt"
 
+      - name: Diagnostico de node pools (solo lectura)
+        continue-on-error: true
+        run: |
+          {
+            gcloud container node-pools list --cluster tp3 --zone "${{ vars.GKE_ZONE }}"
+            for pool in infra apps; do
+              echo "## pool $pool"
+              gcloud container node-pools describe "$pool" --cluster tp3 --zone "${{ vars.GKE_ZONE }}" \
+                --format='yaml(status,statusMessage,initialNodeCount,autoscaling,config.spot,config.machineType,instanceGroupUrls)'
+              for ig in $(gcloud container node-pools describe "$pool" --cluster tp3 --zone "${{ vars.GKE_ZONE }}" --format='value(instanceGroupUrls)' | tr ';' ' '); do
+                name=$(basename "$ig")
+                gcloud compute instance-groups managed describe "$name" --zone "${{ vars.GKE_ZONE }}" --format='yaml(targetSize,currentActions,status)'
+                gcloud compute instance-groups managed list-errors "$name" --zone "${{ vars.GKE_ZONE }}" --limit 5
+              done
+            done
+            echo "## Eventos Pending"; kubectl get events -A --field-selector reason=FailedScheduling | tail -5
+          } 2>&1 | tee "$OUT/diagnostico_nodepools.txt"
+
+      - name: El stack tiene que estar arriba (RabbitMQ listo)
+        run: |
+          kubectl -n tp3 wait --for=condition=Ready pod/rabbitmq-0 --timeout=60s \
+            || { echo "::error::RabbitMQ no esta Ready: el nodepool infra no tiene nodos (ver diagnostico)"; exit 1; }
+
       - name: Tokens (generados dentro del backend, enmascarados)
         run: |
           gen() { kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" "$1" "$2" | tr -d '\r\n'; }
           for v in "ADMIN_TOKEN admin admin" "USER_A_TOKEN alice user" "USER_B_TOKEN bob user"; do
             set -- $v; t=$(gen "$2" "$3"); echo "::add-mask::$t"; echo "$1=$t" >> "$GITHUB_ENV"
           done
-          IP=$(kubectl -n tp3 get ingress tp3 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          IP=$(kubectl -n tp3 get ingress -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}')
+          [ -n "$IP" ] || IP=$(kubectl -n tp3 get svc frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          [ -n "$IP" ] || { echo "::error::no hay Ingress ni LoadBalancer con IP"; exit 1; }
           echo "BASE_URL=http://$IP/api" >> "$GITHUB_ENV"
 
       - name: R4 con 3 replicas del backend detras del Ingress publico
