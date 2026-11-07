@@ -49,11 +49,12 @@ docker-compose.yml       stack completo local
 - Suite de pruebas unitarias e integración real con Redis/RabbitMQ en CI. Progreso SSE, panel admin y evidencia R4 con tres backends locales: [parte B](TP3/docs/parte-b.md).
 - Infraestructura aplicada en GCP: el pipeline `deploy` despliega en GKE en cada push a `main` y `workers` crea las VMs. Evidencia R1 en [r1-evidencia.md](TP3/docs/r1-evidencia.md).
 - Hit #4 en local (capturas de Grafana y alertas disparadas), matriz R5 (108 celdas) y tabla del Hit #3 (120 celdas): [informe](TP3/docs/informe.md), secciones 6 y 8.
+- Evidencia en GKE ([evidencia/gke](TP3/evidencia/gke/), workflow [evidencia-gke](.github/workflows/evidencia-gke.yml)): R4 con tres réplicas detrás del Ingress público, y CPU y memoria por pod y por nodo desde Prometheus.
+- Prometheus descubre las VMs workers con `gce_sd_configs`, y los logs de los pods se centralizan en Loki con Fluent Bit ([observability/loki](TP3/observability/loki/)).
 - Guion de la demo y el video: [guion-video.md](TP3/docs/guion-video.md).
 
 **Falta:**
-- Evidencia R4 en GKE (`K8S=1 bash TP3/scripts/r4_evidence.sh` → `TP3/evidencia/r4_gke.txt`). La corrida registrada es en Docker Compose.
-- Capturas de CPU y memoria por pod y por nodo de Grafana en GKE.
+- Video (ver el guion).
 - Validar la conexión VM → RabbitMQ local del esquema híbrido (Hit #2).
 
 ## Seguridad

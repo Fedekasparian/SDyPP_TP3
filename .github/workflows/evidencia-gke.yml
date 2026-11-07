@@ -74,6 +74,14 @@ jobs:
           kubectl get nodes -L pool
           kubectl -n tp3 rollout status statefulset/rabbitmq --timeout=600s
           kubectl -n tp3 rollout status statefulset/redis --timeout=300s
+          # ILBs que usan las VMs workers (si se borraron, se recrean del manifiesto, como en deploy.yml)
+          kubectl apply -k TP3/k8s/infra
+          for s in rabbitmq-internal redis-internal; do
+            for i in $(seq 1 40); do
+              [ -n "$(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" ] && break; sleep 10
+            done
+            echo "$s -> $(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
+          done
           kubectl -n tp3 rollout restart deploy/backend deploy/split deploy/joiner deploy/dlq-monitor
           for d in backend split joiner dlq-monitor frontend; do kubectl -n tp3 rollout status deploy/$d --timeout=300s; done
           if ! kubectl -n tp3 get ingress tp3 >/dev/null 2>&1; then
@@ -144,12 +152,9 @@ jobs:
           GF_PASS=$(kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)
           echo "::add-mask::$GF_PASS"; export GF_PASS
           pip install -q playwright && python -m playwright install --with-deps chromium >/dev/null
-          # Grafana tiene IP publica (Service LoadBalancer); si no, port-forward
-          GF_IP=$(kubectl -n monitoring get svc kube-prometheus-stack-grafana -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          if [ -n "$GF_IP" ]; then export GF_URL="http://$GF_IP"; else
-            kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80 >/dev/null 2>&1 &
-            export GF_URL="http://localhost:3000"
-          fi
+          # Directo al pod: no depende de que exista el Service (LoadBalancer) de Grafana
+          kubectl -n monitoring port-forward deploy/kube-prometheus-stack-grafana 3000:3000 >/dev/null 2>&1 &
+          export GF_URL="http://localhost:3000"
           for i in $(seq 1 30); do curl -sf "$GF_URL/api/health" >/dev/null && break; sleep 5; done
           echo "Grafana: $(curl -s "$GF_URL/api/health" | tr -d '\n')"
           python - <<'EOF'
@@ -178,6 +183,7 @@ jobs:
                   ctx.close()
               b.close()
           EOF
+          ls "$OUT"/grafana_*.png
 
       - uses: actions/upload-artifact@v4
         if: always()
