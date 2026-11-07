@@ -271,6 +271,12 @@ for v3 in $V3_LIST; do
           # medida con meseta corta es indistinguible de una medida con la
           # meseta normal, y la tabla de R5 diria algo que no es.
           t1=$(date +%s)
+          # k6 guarda en el JSON lo que devuelve setup(): los tokens de los bots. Son credenciales
+          # validas por 7 dias y los resultados se commitean, asi que se sacan aca.
+          if [[ -n "$PY" && -f "$RESULTS_DIR/$cell.json" ]]; then
+            "$PY" -c 'import json,sys; f=sys.argv[1]; d=json.load(open(f)); d.pop("setup_data",None); json.dump(d,open(f,"w"),indent=2)' \
+              "$RESULTS_DIR/$cell.json" || true
+          fi
           if [[ -n "$CELL_HOOK" ]]; then
             $CELL_HOOK "$cell" "$t0" "$t1" "$RESULTS_DIR" || echo "   (hook de celda fallo, sigue)"
           fi
