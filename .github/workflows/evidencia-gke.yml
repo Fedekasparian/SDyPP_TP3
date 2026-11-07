@@ -1,0 +1,123 @@
+# Evidencia en GKE (R4 con 3 replicas y Hit #4 CPU/memoria por pod y por nodo).
+# Corre contra el cluster ya desplegado, sin cambiar nada salvo escalar backend a 3.
+# La salida queda como artifact `evidencia-gke` y se copia a TP3/evidencia/gke/.
+name: evidencia-gke
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/cierre-entrega]
+    paths: [.github/workflows/evidencia-gke.yml]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  evidencia:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    env:
+      OUT: ${{ github.workspace }}/out
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/get-gke-credentials@v2
+        with: { cluster_name: tp3, location: "${{ vars.GKE_ZONE }}" }
+
+      - name: Contexto del cluster (pools infra/apps)
+        run: |
+          mkdir -p "$OUT"
+          {
+            echo "# $(date -u +%FT%TZ) · cluster tp3 · ${{ vars.GKE_ZONE }}"
+            echo "## Nodos (label pool)"; kubectl get nodes -L pool -o wide
+            echo; echo "## Pods tp3"; kubectl -n tp3 get pods -o wide
+            echo; echo "## Pods monitoring"; kubectl -n monitoring get pods -o wide
+            echo; echo "## Ingress"; kubectl -n tp3 get ingress
+          } | tee "$OUT/contexto_gke.txt"
+
+      - name: Tokens (generados dentro del backend, enmascarados)
+        run: |
+          gen() { kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" "$1" "$2" | tr -d '\r\n'; }
+          for v in "ADMIN_TOKEN admin admin" "USER_A_TOKEN alice user" "USER_B_TOKEN bob user"; do
+            set -- $v; t=$(gen "$2" "$3"); echo "::add-mask::$t"; echo "$1=$t" >> "$GITHUB_ENV"
+          done
+          IP=$(kubectl -n tp3 get ingress tp3 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          echo "BASE_URL=http://$IP/api" >> "$GITHUB_ENV"
+
+      - name: R4 con 3 replicas del backend detras del Ingress publico
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          K8S=1 bash TP3/scripts/r4_evidence.sh 2>&1 | tee "$OUT/r4_gke.txt"
+
+      - name: Carga corta para poblar el dashboard
+        run: |
+          for i in $(seq 1 40); do
+            curl -s -o /dev/null -w "%{http_code} " -H "Authorization: Bearer $USER_A_TOKEN" \
+              -F files=@TP3/loadtest/sample.png -F ops=sobel -F ops=blur "$BASE_URL/jobs" || true
+            sleep 2
+          done | tee "$OUT/carga_http_codes.txt"; echo
+          sleep 60
+
+      - name: Prometheus (CPU/memoria por pod y nodo, targets de VMs workers)
+        run: |
+          kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090 >/dev/null 2>&1 &
+          sleep 5
+          q() {
+            echo "## $1"; echo "query: $2"
+            curl -s --get localhost:9090/api/v1/query --data-urlencode "query=$2" \
+              | jq -r '.data.result[] | "\(.metric | del(.__name__) | to_entries | map("\(.key)=\(.value)") | join(","))\t\(.value[1])"'
+            echo
+          }
+          {
+            echo "# Prometheus en GKE · $(date -u +%FT%TZ)"
+            q "CPU por pod (cores)" 'sum by (pod) (rate(container_cpu_usage_seconds_total{namespace="tp3",container!=""}[2m]))'
+            q "Memoria por pod (bytes)" 'sum by (pod) (container_memory_working_set_bytes{namespace="tp3",container!=""})'
+            q "CPU por nodo (fraccion)" '1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[2m]))'
+            q "Memoria por nodo (fraccion)" '1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes'
+            q "Tareas procesadas por servicio (total)" 'sum by (service) (tasks_processed_total)'
+            echo "## Targets del job tp3-vm-workers (VMs fuera del cluster)"
+            curl -s 'localhost:9090/api/v1/targets?scrapePool=tp3-vm-workers' \
+              | jq -r '.data.activeTargets[] | "\(.labels.instance)\t\(.scrapeUrl)\t\(.health)\t\(.lastError)"'
+          } | tee "$OUT/prometheus_gke.txt"
+
+      - name: Capturas de Grafana (Chromium headless)
+        continue-on-error: true
+        run: |
+          kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80 >/dev/null 2>&1 &
+          GF_PASS=$(kubectl -n monitoring get secret grafana-admin -o jsonpath='{.data.admin-password}' | base64 -d)
+          echo "::add-mask::$GF_PASS"; export GF_PASS
+          pip install -q playwright && python -m playwright install --with-deps chromium >/dev/null
+          python - <<'EOF'
+          import base64, os
+          from playwright.sync_api import sync_playwright
+          out = os.environ["OUT"]
+          auth = base64.b64encode(f"admin:{os.environ['GF_PASS']}".encode()).decode()
+          base = "http://localhost:3000"
+          rng = "orgId=1&from=now-30m&to=now&theme=light"
+          shots = {"dashboard_completo": f"/d/tp3-main/tp3?{rng}&kiosk"}
+          names = {1: "cpu_por_pod", 2: "memoria_por_pod", 3: "cpu_por_nodo", 4: "memoria_por_nodo",
+                   6: "rabbitmq_publicados_consumidos", 7: "latencia_fragmento_p50_p95_p99"}
+          for pid, n in names.items():
+              shots[n] = f"/d-solo/tp3-main/tp3?{rng}&panelId={pid}"
+          with sync_playwright() as p:
+              b = p.chromium.launch()
+              for name, path in shots.items():
+                  full = name == "dashboard_completo"
+                  ctx = b.new_context(extra_http_headers={"Authorization": f"Basic {auth}"},
+                                      viewport={"width": 1600, "height": 1800} if full else {"width": 1100, "height": 480})
+                  page = ctx.new_page()
+                  page.goto(base + path, wait_until="networkidle", timeout=60000)
+                  page.wait_for_timeout(6000)
+                  page.screenshot(path=f"{out}/grafana_{name}.png", full_page=full)
+                  print("ok", name)
+                  ctx.close()
+              b.close()
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: evidencia-gke, path: out/ }
