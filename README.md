@@ -14,6 +14,16 @@ curl -H "Authorization: Bearer $TOKEN" -F files=@TP3/loadtest/sample.png -F ops=
 ```
 UI en http://localhost:8081, Swagger en http://localhost:8000/docs y RabbitMQ en http://localhost:15672. Con `docker compose --profile obs up -d` se suman Grafana (:3000) y Prometheus (:9090).
 
+## Despliegue público (GKE)
+| Qué | URL |
+|---|---|
+| Frontend | http://136.69.20.245 |
+| Backend (Swagger) | http://136.69.20.245/api/docs |
+| Estado (health-check) | http://136.69.20.245/api/health |
+| Grafana | http://136.80.214.178 |
+
+La IP del Ingress es la IP estática global `tp3-ingress`, así que no cambia entre despliegues. Los tokens se generan contra el cluster con [gen_tokens_gke.sh](TP3/scripts/gen_tokens_gke.sh) y se comparten por privado.
+
 ## Estructura
 ```
 TP3/
