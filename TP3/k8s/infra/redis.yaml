@@ -15,15 +15,18 @@ spec:
       containers:
         - name: redis
           image: redis:7.4-alpine
-          # Tope por debajo del limit del pod (2Gi). Sin tope, con noeviction, la matriz R5 (jobs con
-          # TTL de 24 h) lleno la memoria y el kubelet mato a Redis por OOM, tirando el backend.
+          # Tope bien por debajo del limit del pod (2Gi). Sin tope, con noeviction, la matriz R5 (jobs
+          # con TTL de 24 h) lleno la memoria y el kubelet mato a Redis por OOM, tirando el backend.
+          # Con 1800mb tambien murio: maxmemory cuenta solo los datos, y los buffers de los clientes
+          # (fragmentos de 1 MB que leen los workers) y la fragmentacion suman cientos de MB.
           # volatile-ttl descarta primero las claves que vencen antes (los jobs mas viejos); los
           # jobs en curso son los mas nuevos y quedan.
           # Sin persistencia a disco: con carga sostenida el AOF crecio a 3,7 GB y lleno el volumen
           # de 8 GiB; sin disco Redis rechaza toda escritura y el backend responde 503. Lo que guarda
-          # son jobs con TTL de 24 h: perderlos en un reinicio es aceptable.
+          # son jobs con TTL de 24 h: perderlos en un reinicio es aceptable. --dir /tmp evita cargar
+          # el dump.rdb viejo que quedo en /data (1,8 GB: arrancaba casi lleno y volvia a morir).
           args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "no", "--save", "",
-                 "--maxmemory", "1800mb", "--maxmemory-policy", "volatile-ttl"]
+                 "--dir", "/tmp", "--maxmemory", "1200mb", "--maxmemory-policy", "volatile-ttl"]
           env:
             - name: REDIS_PASSWORD
               valueFrom: { secretKeyRef: { name: redis-auth, key: redis-password } }
