@@ -13,8 +13,16 @@ El motivo es que R5 es un entregable que no puede tener huecos: si una celda se
 corta por timeout y solo listaramos los JSON existentes, la tabla saldria con
 102 filas y nada avisaria.
 
-La columna `cuello_de_botella` se completa a mano mirando Grafana durante la
-corrida.
+La columna `cuello_de_botella` sale de lo que Prometheus vio durante la celda
+(results-*/<celda>.prom.json, que escribe prom_celda.py) aplicando la regla de
+`cuello_de_botella()`. Si la celda no tiene captura (la corrida local del 23/10
+no la guardaba), la columna lo dice en vez de quedar vacia.
+
+SLO (ver TP3/loadtest/README.md, "Objetivo de negocio"):
+  - interactivo (VA=1):  p95 end-to-end <= SLO_P95_S          (10 s)
+  - lote (VA>1):         p95 end-to-end <= SLO_P95_LOTE_S     (45 s)
+  - en ambos:            tasa de error  <  SLO_ERR            (1 %)
+SLO_MODO=legacy reproduce el SLO unico de la corrida local (p95 < 10 s, error < 5 %).
 """
 import csv
 import json
@@ -22,9 +30,17 @@ import os
 import re
 from pathlib import Path
 
+SLO_MODO = os.getenv("SLO_MODO", "negocio")
 SLO_P95_S = float(os.getenv("SLO_P95_S", "10"))
-SLO_ERR = float(os.getenv("SLO_ERR", "0.05"))
+SLO_P95_LOTE_S = float(os.getenv("SLO_P95_LOTE_S", "45" if SLO_MODO == "negocio" else "10"))
+SLO_ERR = float(os.getenv("SLO_ERR", "0.01" if SLO_MODO == "negocio" else "0.05"))
 MATRIX = os.getenv("MATRIX", "r5")
+
+# Umbrales de la regla de cuello de botella.
+COLA_MIN = int(os.getenv("COLA_MIN", "50"))          # mensajes listos para considerar que una cola se acumula
+CPU_VM_SAT = float(os.getenv("CPU_VM_SAT", "0.7"))   # nucleos: el worker es un proceso Python (~1 nucleo util)
+CPU_POD_SAT = float(os.getenv("CPU_POD_SAT", "0.8")) # fraccion del limit de CPU del pod
+CPU_NODO_SAT = float(os.getenv("CPU_NODO_SAT", "0.85"))
 
 # El producto cruzado que exige cada matriz. Tiene que coincidir con las listas
 # de run_matrix.sh. VB es la CANTIDAD de operaciones encadenadas, no la cadena.
@@ -46,7 +62,7 @@ ESPERADAS = {
 }
 
 base_dir = Path(__file__).parent
-res_dir = base_dir / "results"
+res_dir = base_dir / os.getenv("RESULTS_DIR", "results")
 pattern = re.compile(
     r"(?P<matrix>\w+?)_V1-(?P<V1>\w+)_V3-(?P<V3>\d+)_VA-(?P<VA>\d+)_VB-(?P<VB>\d+)_VC-(?P<VC>\d+)"
 )
@@ -62,8 +78,11 @@ def leer_declaradas():
     (V1=10KB, V3=2, VA=1, VB=1, VC=1) es una celda de R5 y tambien una del
     Hit #3. Sin filtrar, declarar una de las dos declararia la otra sin querer.
     """
-    f = base_dir / "celdas_declaradas.csv"
-    if not f.exists():
+    # DECLARADAS_CSV="" desactiva las declaraciones: en GKE una celda no medida
+    # tiene que verse como SIN MEDIR y no heredar un motivo de la corrida local.
+    nombre = os.getenv("DECLARADAS_CSV", "celdas_declaradas.csv")
+    f = base_dir / nombre
+    if not nombre or not f.is_file():
         return {}
     # Las lineas que empiezan con # son comentarios: csv no los filtra solo.
     lineas = [ln for ln in f.read_text(encoding="utf-8").splitlines() if not ln.startswith("#")]
@@ -78,6 +97,8 @@ def leer_medidas():
     """results/*.json de esta matriz -> {(V1,V3,VA,VB,VC): metricas}."""
     medidas = {}
     for f in sorted(res_dir.glob("*.json")):
+        if f.name.endswith(".prom.json"):
+            continue
         m = pattern.match(f.stem)
         if not m or m.group("matrix") != MATRIX:
             continue
@@ -102,6 +123,53 @@ def meseta_de(clave):
     return "?"
 
 
+def cola(colas, prefijo):
+    return max((v for k, v in colas.items() if k.startswith(prefijo)), default=0)
+
+
+def cuello_de_botella(clave, metrics):
+    """Regla explicita sobre lo que vio Prometheus en la ventana de la celda.
+
+    Se recorre el pipeline en orden (entrada -> split -> workers -> joiner) y se
+    reporta la PRIMERA etapa saturada, con el dato que la delata, porque una
+    etapa saturada aguas arriba esconde a las de abajo (no les llega trabajo).
+    """
+    f = res_dir / (f"{MATRIX}_V1-{clave[0]}_V3-{clave[1]}_VA-{clave[2]}_VB-{clave[3]}_VC-{clave[4]}.prom.json")
+    if not f.exists():
+        return "sin captura de Prometheus (corrida local del 23/10; ver matriz GKE)"
+    p = json.loads(f.read_text(encoding="utf-8"))
+    colas = p.get("colas", {})
+    pods = p.get("cpu_pod_frac", {})
+    vms = p.get("cpu_vm", {})
+    nodos = p.get("cpu_nodo", {})
+    c_split, c_tasks, c_res = cola(colas, "split"), cola(colas, "tasks.tp3"), cola(colas, "results.joiner")
+    cpu_vm = max(vms.values(), default=0)
+    timeouts = metrics.get("job_timeouts", {}).get("count", 0)
+
+    if pods.get("backend", 0) >= CPU_POD_SAT:
+        return f"backend: CPU al {pods['backend']:.0%} del limit (ingreso HTTP)"
+    if c_split >= COLA_MIN and c_split >= c_tasks / 4:
+        return f"split: cola split.requests max {c_split:.0f}, CPU split {pods.get('split', 0):.0%} del limit"
+    if c_tasks >= COLA_MIN:
+        if cpu_vm >= CPU_VM_SAT:
+            return f"workers (VMs): CPU {cpu_vm:.2f} nucleos/VM, cola tasks max {c_tasks:.0f}"
+        return (f"workers (VMs) por I/O: cola tasks max {c_tasks:.0f} con CPU {cpu_vm:.2f} nucleos/VM "
+                f"(fragmentos ida y vuelta a Redis por la red VM-cluster)")
+    if c_res >= COLA_MIN:
+        return f"joiner: cola results.joiner max {c_res:.0f}, CPU joiner {pods.get('joiner', 0):.0%}"
+    nodo, cpu_n = max(nodos.items(), key=lambda kv: kv[1], default=("", 0))
+    if cpu_n >= CPU_NODO_SAT:
+        return f"nodo GKE {nodo} al {cpu_n:.0%} de CPU"
+    if timeouts:
+        return f"sin cola acumulada pero {timeouts} timeouts: revisar ingreso (Ingress/red)"
+    return f"ninguno: sin saturacion (colas max {max(c_split, c_tasks, c_res):.0f}, CPU VM {cpu_vm:.2f}); domina el recorrido y el polling"
+
+
+def slo_ok(clave, p95, err):
+    limite = SLO_P95_S if clave[2] == "1" else SLO_P95_LOTE_S
+    return "si" if p95 < limite and err < SLO_ERR else "no"
+
+
 def fila_medida(clave, metrics):
     lat = metrics.get("job_latency", {})
     err = metrics.get("job_errors", {}).get("value", 0.0)
@@ -119,8 +187,8 @@ def fila_medida(clave, metrics):
         "dlq": metrics.get("job_dlq", {}).get("count", 0),
         "timeouts": metrics.get("job_timeouts", {}).get("count", 0),
         "invalidos_rechazados": metrics.get("invalid_rejected", {}).get("count", 0),
-        "slo_ok": "si" if p95 < SLO_P95_S and err < SLO_ERR else "no",
-        "cuello_de_botella": "",
+        "slo_ok": slo_ok(clave, p95, err),
+        "cuello_de_botella": cuello_de_botella(clave, metrics),
     }
 
 

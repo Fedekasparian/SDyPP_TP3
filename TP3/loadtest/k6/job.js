@@ -13,7 +13,6 @@
 import http from "k6/http";
 import { check, sleep } from "k6";
 import { Counter, Rate, Trend } from "k6/metrics";
-import { FormData } from "https://jslib.k6.io/formdata/0.0.2/index.js";
 
 const BASE = __ENV.BASE_URL || "http://localhost:8000";
 const VA = parseInt(__ENV.VA || "1");
@@ -78,14 +77,34 @@ export function setup() {
 // El payload es identico en todas las iteraciones, asi que armarlo una vez no
 // cambia lo que se mide; al contrario, saca del camino caliente un costo que es
 // del generador de carga y no del sistema bajo prueba.
+//
+// Actualizacion (07/11): el cuerpo ya no se arma con la FormData de la jslib.
+// Se calcula el largo exacto y se copia cada parte UNA vez en un solo
+// Uint8Array, asi el pico de memoria por VU es el tamanio del payload (y no un
+// multiplo grande). Esto es lo que permite medir en GKE las celdas V1=1MB con
+// VA alto que en la corrida local morian por OOM del generador.
+function ascii(s) {
+  const b = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) b[i] = s.charCodeAt(i) & 0xff;
+  return b;
+}
 function armarCuerpo(invalido) {
-  const fd = new FormData();
+  const boundary = `----tp3k6${Math.floor(Math.random() * 1e12)}`;
+  const img = new Uint8Array(IMG);
+  const corrupto = ascii("esto no es una imagen");
+  const partes = [];
   for (let i = 0; i < VA; i++) {
-    const body = invalido && i === 0 ? "esto no es una imagen" : IMG;
-    fd.append("files", http.file(body, `img${i}.png`, "image/png"));
+    partes.push(ascii(`--${boundary}\r\nContent-Disposition: form-data; name="files"; filename="img${i}.png"\r\nContent-Type: image/png\r\n\r\n`));
+    partes.push(invalido && i === 0 ? corrupto : img);
+    partes.push(ascii("\r\n"));
   }
-  fd.append("ops", OPS);
-  return { cuerpo: fd.body(), boundary: fd.boundary };
+  partes.push(ascii(`--${boundary}\r\nContent-Disposition: form-data; name="ops"\r\n\r\n${OPS}\r\n--${boundary}--\r\n`));
+  let total = 0;
+  for (const p of partes) total += p.length;
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of partes) { out.set(p, off); off += p.length; }
+  return { cuerpo: out.buffer, boundary };
 }
 const PAYLOAD_OK = armarCuerpo(false);
 // Solo se arma si de verdad se van a mandar invalidos: con INVALID_RATE=0

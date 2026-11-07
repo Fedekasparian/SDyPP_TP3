@@ -14,8 +14,22 @@ fi
 gcloud auth configure-docker ${region}-docker.pkg.dev --quiet
 docker pull ${worker_image}
 
-RABBIT_PASS=$(gcloud secrets versions access latest --secret=tp3-rabbit-pass)
-REDIS_PASS=$(gcloud secrets versions access latest --secret=tp3-redis-pass)
+%{ if tailscale_secret != "" ~}
+# Hit #2 (hibrido): la RabbitMQ/Redis estan en un equipo local, alcanzable por la
+# red overlay de Tailscale (100.x). Solo trafico saliente: no se abre nada en GCP
+# ni en el router de la casa. set +x para no imprimir la key en la consola serie.
+if ! command -v tailscale >/dev/null; then curl -fsSL https://tailscale.com/install.sh | sh; fi
+set +x
+TS_KEY=$(gcloud secrets versions access latest --secret=${tailscale_secret})
+tailscale up --authkey="$TS_KEY" --hostname="$(hostname)"
+unset TS_KEY
+set -x
+for i in $(seq 1 30); do tailscale ping -c 1 ${rabbit_host} && break; sleep 5; done
+%{ endif ~}
+
+set +x   # las passwords no van a la consola serie
+RABBIT_PASS=$(gcloud secrets versions access latest --secret=${rabbit_secret})
+REDIS_PASS=$(gcloud secrets versions access latest --secret=${redis_secret})
 # base64 puede traer /, + o =, que rompen las URLs: se codifican
 RABBIT_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$RABBIT_PASS")
 REDIS_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$REDIS_PASS")
@@ -29,3 +43,4 @@ docker run -d --name tp3-worker --restart unless-stopped -p 8080:8080 \
   -e ALLOWED_WORKER_IMAGES=${worker_pool} \
   -e WORKER_ID="$(hostname)" \
   ${worker_image}
+set -x
