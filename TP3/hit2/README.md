@@ -91,6 +91,30 @@ terraform apply -var project_id=... -var workers_service_account=... \
 terraform apply ... -var worker_count=0   # teardown
 ```
 
+## Corrida híbrida
+
+La VM de GCP llega a la RabbitMQ y la Redis del equipo local por **Tailscale**. El workflow
+[hibrido.yml](../../.github/workflows/hibrido.yml) usa un estado de Terraform propio
+(`prefix=workers-hibrido`), así que no toca las VMs del Hit #3. Los secretos están en Secret Manager:
+`tp3-tailscale-authkey`, `tp3-hibrido-rabbit-pass` y `tp3-hibrido-redis-pass`.
+
+1. En el equipo local: Tailscale conectado al mismo tailnet y anotar la IP (`tailscale ip -4`, una `100.x`).
+2. `.env` con `RABBIT_PASS` y `REDIS_PASS` iguales a los secretos `tp3-hibrido-*`, y levantar el stack:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.hibrido.yml up -d --build --scale worker=2
+   ```
+3. Crear la VM: `gh workflow run hibrido.yml -f worker_count=1 -f local_host=<ip 100.x>`. El log
+   muestra el `tailscale ping` desde la VM.
+4. Medir los tres escenarios (cada uno deja `TP3/evidencia/hit2/<escenario>.txt`):
+   ```bash
+   py TP3/scripts/hibrido_evidencia.py local      # sin VM
+   docker compose up -d --no-deps --scale worker=0 worker
+   py TP3/scripts/hibrido_evidencia.py nube       # solo la VM
+   docker compose up -d --no-deps --scale worker=2 worker
+   py TP3/scripts/hibrido_evidencia.py mixto      # locales + VM (cloud-bursting)
+   ```
+5. Teardown: `gh workflow run hibrido.yml -f worker_count=0`.
+
 ## Kubernetes local
 
 El cluster local es **k3d** (Windows/macOS) o **k3s** (Linux/WSL2), según la Práctica 0 de la cátedra
