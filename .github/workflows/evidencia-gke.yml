@@ -54,6 +54,14 @@ jobs:
               done
             done
             echo "## Eventos Pending"; kubectl get events -A --field-selector reason=FailedScheduling | tail -5
+            echo "## Discos (cuota SSD_TOTAL_GB cuenta pd-ssd y pd-balanced)"
+            gcloud compute disks list --format='table(name,zone.basename(),sizeGb,type.basename(),users.basename().list())'
+            echo "## Cuota regional"
+            gcloud compute regions describe us-central1 --flatten=quotas \
+              --filter='quotas.metric=(SSD_TOTAL_GB,DISKS_TOTAL_GB,CPUS,IN_USE_ADDRESSES)' \
+              --format='table(quotas.metric,quotas.usage,quotas.limit)'
+            echo "## VMs"; gcloud compute instances list --format='table(name,zone.basename(),status,machineType.basename())'
+            echo "## PVCs"; kubectl get pvc -A
           } 2>&1 | tee "$OUT/diagnostico_nodepools.txt"
 
       - name: El stack tiene que estar arriba (RabbitMQ listo)
