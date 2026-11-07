@@ -15,7 +15,12 @@ spec:
       containers:
         - name: redis
           image: redis:7.4-alpine
-          args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+          # Tope por debajo del limit del pod (2Gi). Sin tope, con noeviction, la matriz R5 (jobs con
+          # TTL de 24 h) lleno la memoria y el kubelet mato a Redis por OOM, tirando el backend.
+          # volatile-ttl descarta primero las claves que vencen antes (los jobs mas viejos); los
+          # jobs en curso son los mas nuevos y quedan.
+          args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes",
+                 "--maxmemory", "1800mb", "--maxmemory-policy", "volatile-ttl"]
           env:
             - name: REDIS_PASSWORD
               valueFrom: { secretKeyRef: { name: redis-auth, key: redis-password } }
