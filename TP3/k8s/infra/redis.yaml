@@ -19,7 +19,10 @@ spec:
           # TTL de 24 h) lleno la memoria y el kubelet mato a Redis por OOM, tirando el backend.
           # volatile-ttl descarta primero las claves que vencen antes (los jobs mas viejos); los
           # jobs en curso son los mas nuevos y quedan.
-          args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "yes",
+          # Sin persistencia a disco: con carga sostenida el AOF crecio a 3,7 GB y lleno el volumen
+          # de 8 GiB; sin disco Redis rechaza toda escritura y el backend responde 503. Lo que guarda
+          # son jobs con TTL de 24 h: perderlos en un reinicio es aceptable.
+          args: ["--requirepass", "$(REDIS_PASSWORD)", "--appendonly", "no", "--save", "",
                  "--maxmemory", "1800mb", "--maxmemory-policy", "volatile-ttl"]
           env:
             - name: REDIS_PASSWORD

@@ -1,0 +1,174 @@
+{
+  "metrics": {
+    "http_req_receiving": {
+      "p(99)": 4.69892388,
+      "max": 27.235775,
+      "count": 3932,
+      "avg": 0.3825554448117996,
+      "min": 0.011727,
+      "med": 0.039984,
+      "p(95)": 1.6105286999999988
+    },
+    "http_req_failed": {
+      "passes": 28,
+      "fails": 3904,
+      "value": 0.007121057985757884
+    },
+    "http_req_duration": {
+      "avg": 67.14843975178037,
+      "min": 34.407898,
+      "med": 57.468331500000005,
+      "p(95)": 109.33498254999999,
+      "p(99)": 154.03481489,
+      "max": 294.467089,
+      "count": 3932
+    },
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 14.920400390000001,
+      "max": 34.095942,
+      "count": 3932,
+      "avg": 0.2887224926246185,
+      "min": 0,
+      "med": 0
+    },
+    "iteration_duration": {
+      "avg": 13189.842021721513,
+      "min": 75.908349,
+      "med": 13680.161630999999,
+      "p(95)": 30139.331678900002,
+      "p(99)": 32163.94957817,
+      "max": 32399.918961,
+      "count": 158
+    },
+    "iterations": {
+      "count": 158,
+      "rate": 2.5542113652950356
+    },
+    "http_req_blocked": {
+      "med": 0.0034454999999999998,
+      "p(95)": 0.008461999999999997,
+      "p(99)": 14.976422130000001,
+      "max": 34.15858,
+      "count": 3932,
+      "avg": 0.2936573575788399,
+      "min": 0.001442
+    },
+    "http_req_tls_handshaking": {
+      "max": 0,
+      "count": 3932,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 0
+    },
+    "data_received": {
+      "count": 2082584,
+      "rate": 33666.83368342782
+    },
+    "vus_max": {
+      "max": 51,
+      "value": 51,
+      "min": 51
+    },
+    "invalid_rejected": {
+      "count": 8,
+      "rate": 0.1293271577364575
+    },
+    "http_reqs": {
+      "count": 3932,
+      "rate": 63.56429802746886
+    },
+    "data_sent": {
+      "rate": 241488.67332887085,
+      "count": 14938157
+    },
+    "http_req_waiting": {
+      "count": 3932,
+      "avg": 66.74443671312322,
+      "min": 34.135569,
+      "med": 57.2197835,
+      "p(95)": 108.91973074999997,
+      "p(99)": 153.26111322,
+      "max": 294.424752
+    },
+    "vus": {
+      "min": 0,
+      "max": 51,
+      "value": 4
+    },
+    "job_errors": {
+      "passes": 0,
+      "fails": 130,
+      "thresholds": {
+        "rate<0.05": false
+      },
+      "value": 0
+    },
+    "checks": {
+      "passes": 160,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_sending": {
+      "med": 0.012999,
+      "p(95)": 0.03272399999999999,
+      "p(99)": 0.12750751000000013,
+      "max": 14.485439,
+      "count": 3932,
+      "avg": 0.02144759384537136,
+      "min": 0.005478
+    },
+    "job_latency": {
+      "p(99)": 32196.07,
+      "max": 32400,
+      "count": 130,
+      "avg": 15862.33076923077,
+      "min": 644,
+      "med": 16325.5,
+      "p(95)": 30719.899999999998,
+      "thresholds": {
+        "p(95)<10000": true
+      }
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(99)": 154.08053356999997,
+      "max": 294.467089,
+      "count": 3904,
+      "avg": 67.1798250425206,
+      "min": 34.407898,
+      "med": 57.4937965,
+      "p(95)": 109.30891884999998
+    }
+  },
+  "root_group": {
+    "checks": {
+      "bot sin token -> 401": {
+        "name": "bot sin token -> 401",
+        "path": "::bot sin token -> 401",
+        "id": "fb57ab30c58cbf184d0446ce48a1b843",
+        "passes": 20,
+        "fails": 0
+      },
+      "POST /jobs -> 202": {
+        "name": "POST /jobs -> 202",
+        "path": "::POST /jobs -> 202",
+        "id": "b64dcd1fe790c23ed11c063d4a64d6b7",
+        "passes": 132,
+        "fails": 0
+      },
+      "invalido -> 400 claro": {
+        "name": "invalido -> 400 claro",
+        "path": "::invalido -> 400 claro",
+        "id": "96bed2df279638c1b12eee06f2397a87",
+        "passes": 8,
+        "fails": 0
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {}
+  }
+}
