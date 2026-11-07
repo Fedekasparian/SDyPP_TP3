@@ -44,6 +44,11 @@ jobs:
         with: { cluster_name: tp3, location: "${{ vars.GKE_ZONE }}" }
       - uses: hashicorp/setup-terraform@v3
         with: { terraform_wrapper: false }
+      # k6 como binario: con la imagen grafana/k6 el contenedor corre como el usuario
+      # k6 (uid 12345) y no puede escribir el --summary-export en el directorio montado
+      # del runner, asi que las celdas quedaban sin JSON y el humo daba 0 jobs ok.
+      - uses: grafana/setup-k6-action@v1
+        with: { k6-version: "0.54.0" }
 
       - name: Stack arriba
         env: { GKE_ZONE: "${{ vars.GKE_ZONE }}" }
