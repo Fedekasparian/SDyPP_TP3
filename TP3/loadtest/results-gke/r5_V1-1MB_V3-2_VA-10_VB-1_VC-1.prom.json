@@ -1,0 +1,45 @@
+{
+ "celda": "r5_V1-1MB_V3-2_VA-10_VB-1_VC-1",
+ "t0": 1794089337,
+ "t1": 1794089370,
+ "ventana_s": 33,
+ "colas": {
+  "split.requests": 0.0,
+  "results.monitor": 0.0,
+  "tasks.dlq": 0.0,
+  "tasks.tp3-worker": 24.0,
+  "results.joiner": 0.0,
+  "tasks.parked": 4.0,
+  "sobel.split": 0.0,
+  "sobel.dlq.agotados": 0.0,
+  "sobel.joiner": 0.0,
+  "sobel.tareas.ghcr.io/chimera-sdypp/sobel-worker:1.1.0": 0.0,
+  "sobel.dlq": 0.0
+ },
+ "cpu_vm": {
+  "tp3-worker-0": 0.1936,
+  "tp3-worker-1": 0.1793
+ },
+ "cpu_pod_frac": {
+  "rabbitmq-0": 0.125,
+  "redis-0": 0.102,
+  "frontend": 0.118,
+  "backend": 0.072,
+  "split": 0.253,
+  "joiner": 0.218,
+  "dlq-monitor": 0.038
+ },
+ "cpu_nodo": {
+  "10.128.15.218:9100": 0.8673,
+  "10.128.15.230:9100": 0.2037,
+  "10.128.15.236:9100": 0.1895,
+  "10.128.15.219:9100": 0.3473
+ },
+ "http_p95_s": 0.1539,
+ "worker_p95_s": null,
+ "procesados": {
+  "split": 13.2,
+  "dlq-monitor": 528.0,
+  "joiner": 498.3
+ }
+}

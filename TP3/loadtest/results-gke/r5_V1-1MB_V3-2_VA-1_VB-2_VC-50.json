@@ -1,0 +1,174 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bot sin token -> 401": {
+        "name": "bot sin token -> 401",
+        "path": "::bot sin token -> 401",
+        "id": "fb57ab30c58cbf184d0446ce48a1b843",
+        "passes": 19,
+        "fails": 0
+      },
+      "POST /jobs -> 202": {
+        "name": "POST /jobs -> 202",
+        "path": "::POST /jobs -> 202",
+        "id": "b64dcd1fe790c23ed11c063d4a64d6b7",
+        "passes": 283,
+        "fails": 0
+      },
+      "invalido -> 400 claro": {
+        "passes": 10,
+        "fails": 0,
+        "name": "invalido -> 400 claro",
+        "path": "::invalido -> 400 claro",
+        "id": "96bed2df279638c1b12eee06f2397a87"
+      }
+    }
+  },
+  "metrics": {
+    "http_req_failed": {
+      "passes": 29,
+      "fails": 2509,
+      "value": 0.011426319936958234
+    },
+    "http_req_blocked": {
+      "count": 2538,
+      "avg": 0.061338364854215885,
+      "min": 0.001713,
+      "med": 0.003517,
+      "p(95)": 0.009088500000000001,
+      "p(99)": 2.611336140000003,
+      "max": 10.244497
+    },
+    "http_req_receiving": {
+      "avg": 1.105425747438928,
+      "min": 0.017733,
+      "med": 0.039098999999999995,
+      "p(95)": 6.125585250000001,
+      "p(99)": 21.820457650000055,
+      "max": 74.670256,
+      "count": 2538
+    },
+    "http_req_duration": {
+      "p(99)": 523.1164958400001,
+      "max": 881.291777,
+      "count": 2538,
+      "avg": 104.34190214775434,
+      "min": 30.898653,
+      "med": 63.909251,
+      "p(95)": 309.48433380000006
+    },
+    "http_req_waiting": {
+      "med": 63.317512,
+      "p(95)": 305.72923605000005,
+      "p(99)": 521.3609623500005,
+      "max": 880.968612,
+      "count": 2538,
+      "avg": 102.90963207486205,
+      "min": 30.664745
+    },
+    "job_latency": {
+      "avg": 4769.632508833923,
+      "min": 657,
+      "med": 5412,
+      "p(95)": 6161.999999999999,
+      "p(99)": 6350.08,
+      "max": 6624,
+      "count": 283,
+      "thresholds": {
+        "p(95)<10000": false
+      }
+    },
+    "iterations": {
+      "rate": 9.228622776523762,
+      "count": 312
+    },
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 2.5562412300000026,
+      "max": 10.160118,
+      "count": 2538,
+      "avg": 0.055914786840031525,
+      "min": 0,
+      "med": 0
+    },
+    "checks": {
+      "passes": 312,
+      "fails": 0,
+      "value": 1
+    },
+    "job_errors": {
+      "fails": 283,
+      "passes": 0,
+      "thresholds": {
+        "rate<0.05": false
+      },
+      "value": 0
+    },
+    "vus_max": {
+      "value": 51,
+      "min": 51,
+      "max": 51
+    },
+    "data_sent": {
+      "count": 283664490,
+      "rate": 8390489.017003195
+    },
+    "vus": {
+      "value": 13,
+      "min": 0,
+      "max": 51
+    },
+    "data_received": {
+      "count": 1273833,
+      "rate": 37678.60332463973
+    },
+    "http_req_duration{expected_response:true}": {
+      "avg": 104.49209998605039,
+      "min": 30.898653,
+      "med": 63.934517,
+      "p(95)": 309.5581302,
+      "p(99)": 522.6267466800003,
+      "max": 881.291777,
+      "count": 2509
+    },
+    "invalid_rejected": {
+      "count": 10,
+      "rate": 0.2957891915552488
+    },
+    "http_req_sending": {
+      "max": 17.56924,
+      "count": 2538,
+      "avg": 0.3268443254531121,
+      "min": 0.006452,
+      "med": 0.0169015,
+      "p(95)": 0.3248819500000001,
+      "p(99)": 9.737925810000002
+    },
+    "http_reqs": {
+      "count": 2538,
+      "rate": 75.07129681672214
+    },
+    "http_req_tls_handshaking": {
+      "min": 0,
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 2538,
+      "avg": 0
+    },
+    "iteration_duration": {
+      "p(99)": 6340.121320569999,
+      "max": 6623.805573,
+      "count": 312,
+      "avg": 4395.789513102562,
+      "min": 34.426324,
+      "med": 5295.8109745,
+      "p(95)": 6131.75332505
+    }
+  }
+}

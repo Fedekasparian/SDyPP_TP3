@@ -1,0 +1,8 @@
+2026-11-07T23:01:24Z
+NAME          ZONE           STATUS   MACHINE_TYPE  NETWORK_IP
+tp3-worker-0  us-central1-a  RUNNING  e2-small      10.128.15.224
+tp3-worker-3  us-central1-a  RUNNING  e2-small      10.128.0.19
+tp3-worker-1  us-central1-b  RUNNING  e2-small      10.128.15.222
+tp3-worker-4  us-central1-b  RUNNING  e2-small      10.128.0.5
+tp3-worker-2  us-central1-c  RUNNING  e2-small      10.128.0.21
+tp3-worker-5  us-central1-c  RUNNING  e2-small      10.128.0.20

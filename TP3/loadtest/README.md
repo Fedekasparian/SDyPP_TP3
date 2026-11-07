@@ -64,8 +64,18 @@ público. V3 son **VMs workers** creadas con Terraform (2 y 6). El resultado que
 [`results-gke/summary.md`](results-gke/summary.md). Al terminar deja 2 VMs prendidas.
 
 En GKE el generador ya no muere por OOM: `job.js` arma el multipart a mano en un solo buffer
-(antes usaba la `FormData` de la jslib, con un pico de memoria de varias veces el payload), y el
-contenedor de k6 tiene 12 GB en el runner.
+(antes usaba la `FormData` de la jslib, con un pico de memoria de varias veces el payload). En el
+runner k6 corre como binario (`grafana/setup-k6-action`): la imagen `grafana/k6` corre como uid
+12345 y no podía escribir el `--summary-export` en el directorio montado.
+
+**Corrida del 07/11/2026: 108/108 medidas**, meseta de 20 s. Análisis en el
+[informe, §8.7](../docs/informe.md#87-r5-en-gke-con-workers-en-vm). Hicieron falta tres
+corridas porque Redis se cayó dos veces bajo la carga (OOM del pod y después disco lleno por el
+AOF). Las celdas medidas antes de cada caída se conservaron y `run_matrix.sh` las salteó en la
+corrida siguiente. Las que corrieron con Redis caído se descartaron. Los cambios que lo dejaron
+estable están en [`k8s/infra/redis.yaml`](../k8s/infra/redis.yaml): `maxmemory 1200mb` con
+`volatile-ttl` y sin persistencia a disco. Las VMs workers no llevan IP pública y salen por
+Cloud NAT, porque la cuota regional de 8 IPs no alcanzaba para V3=6.
 
 ## Correr
 ```bash

@@ -1,0 +1,174 @@
+{
+  "root_group": {
+    "groups": {},
+    "checks": {
+      "bot sin token -> 401": {
+        "name": "bot sin token -> 401",
+        "path": "::bot sin token -> 401",
+        "id": "fb57ab30c58cbf184d0446ce48a1b843",
+        "passes": 15,
+        "fails": 0
+      },
+      "POST /jobs -> 202": {
+        "name": "POST /jobs -> 202",
+        "path": "::POST /jobs -> 202",
+        "id": "b64dcd1fe790c23ed11c063d4a64d6b7",
+        "passes": 71,
+        "fails": 0
+      },
+      "invalido -> 400 claro": {
+        "name": "invalido -> 400 claro",
+        "path": "::invalido -> 400 claro",
+        "id": "96bed2df279638c1b12eee06f2397a87",
+        "passes": 2,
+        "fails": 0
+      }
+    },
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e"
+  },
+  "metrics": {
+    "iterations": {
+      "rate": 1.2648628201286525,
+      "count": 78
+    },
+    "http_req_tls_handshaking": {
+      "max": 0,
+      "count": 3235,
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 0
+    },
+    "data_received": {
+      "count": 1674076,
+      "rate": 27147.134493201203
+    },
+    "http_req_duration": {
+      "p(99)": 6144.920594739996,
+      "max": 12481.021026,
+      "count": 3235,
+      "avg": 216.45018078701676,
+      "min": 30.292563,
+      "med": 50.623693,
+      "p(95)": 510.4491347999996
+    },
+    "job_errors": {
+      "fails": 55,
+      "passes": 6,
+      "thresholds": {
+        "rate<0.05": true
+      },
+      "value": 0.09836065573770492
+    },
+    "http_reqs": {
+      "rate": 52.45937465533578,
+      "count": 3235
+    },
+    "checks": {
+      "passes": 88,
+      "fails": 0,
+      "value": 1
+    },
+    "invalid_rejected": {
+      "rate": 0.03243238000329878,
+      "count": 2
+    },
+    "http_req_duration{expected_response:true}": {
+      "p(95)": 510.9314998999995,
+      "p(99)": 6234.063083580002,
+      "max": 12481.021026,
+      "count": 3128,
+      "avg": 218.03104027589453,
+      "min": 30.295857,
+      "med": 50.4581125
+    },
+    "http_req_failed": {
+      "passes": 107,
+      "fails": 3128,
+      "value": 0.033075734157650694
+    },
+    "http_req_connecting": {
+      "p(95)": 0,
+      "p(99)": 2.4856495399999905,
+      "max": 6.014081,
+      "count": 3235,
+      "avg": 0.04247442905718701,
+      "min": 0,
+      "med": 0
+    },
+    "vus_max": {
+      "value": 51,
+      "min": 51,
+      "max": 51
+    },
+    "http_req_blocked": {
+      "p(99)": 2.5592199999999914,
+      "max": 6.095544,
+      "count": 3235,
+      "avg": 0.048814201236475986,
+      "min": 0.002284,
+      "med": 0.003927,
+      "p(95)": 0.016759999999999983
+    },
+    "data_sent": {
+      "count": 728753684,
+      "rate": 11817608.204145959
+    },
+    "vus": {
+      "value": 10,
+      "min": 0,
+      "max": 51
+    },
+    "http_req_receiving": {
+      "min": 0.018725,
+      "med": 0.043964,
+      "p(95)": 3.936211999999998,
+      "p(99)": 13.028515119999927,
+      "max": 97.462611,
+      "count": 3235,
+      "avg": 0.8047338964451308
+    },
+    "http_req_waiting": {
+      "med": 50.07942,
+      "p(95)": 504.2421761999978,
+      "p(99)": 5315.49452947992,
+      "max": 9910.380353,
+      "count": 3235,
+      "avg": 201.1174717072636,
+      "min": 30.162917
+    },
+    "http_req_sending": {
+      "max": 6532.920462,
+      "count": 3235,
+      "avg": 14.527975183307605,
+      "min": 0.006984,
+      "med": 0.017723,
+      "p(95)": 0.036240999999999995,
+      "p(99)": 159.12966623999907
+    },
+    "iteration_duration": {
+      "max": 48599.900363,
+      "count": 78,
+      "avg": 23415.906174628206,
+      "min": 1034.401611,
+      "med": 26297.9324645,
+      "p(95)": 43171.6993656,
+      "p(99)": 46358.61832154001
+    },
+    "job_latency": {
+      "avg": 28201.836363636365,
+      "min": 4062,
+      "med": 30657,
+      "p(95)": 43205.8,
+      "p(99)": 44694.32,
+      "max": 45689,
+      "count": 55,
+      "thresholds": {
+        "p(95)<10000": true
+      }
+    }
+  }
+}

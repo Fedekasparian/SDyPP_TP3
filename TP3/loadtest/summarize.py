@@ -171,8 +171,12 @@ def slo_ok(clave, p95, err):
 
 
 def fila_medida(clave, metrics):
-    lat = metrics.get("job_latency", {})
+    lat = dict(metrics.get("job_latency", {}))
     err = metrics.get("job_errors", {}).get("value", 0.0)
+    # Sin jobs terminados k6 reporta los percentiles en 0: tomados tal cual, la celda saldria
+    # con p95 = 0 y slo_ok = si. Ningun job dentro de la ventana es justamente lo contrario.
+    if not lat.get("count"):
+        lat = {"count": 0}
     p95 = lat.get("p(95)", float("nan")) / 1000
     return {
         **dict(zip(CLAVE, clave)),

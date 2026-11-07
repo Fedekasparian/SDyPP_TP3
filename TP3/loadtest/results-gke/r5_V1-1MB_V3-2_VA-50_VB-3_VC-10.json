@@ -1,0 +1,174 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bot sin token -> 401": {
+        "fails": 0,
+        "name": "bot sin token -> 401",
+        "path": "::bot sin token -> 401",
+        "id": "fb57ab30c58cbf184d0446ce48a1b843",
+        "passes": 17
+      },
+      "POST /jobs -> 202": {
+        "path": "::POST /jobs -> 202",
+        "id": "b64dcd1fe790c23ed11c063d4a64d6b7",
+        "passes": 13,
+        "fails": 0,
+        "name": "POST /jobs -> 202"
+      },
+      "invalido -> 400 claro": {
+        "fails": 0,
+        "name": "invalido -> 400 claro",
+        "path": "::invalido -> 400 claro",
+        "id": "96bed2df279638c1b12eee06f2397a87",
+        "passes": 2
+      }
+    }
+  },
+  "metrics": {
+    "http_req_receiving": {
+      "med": 0.0530645,
+      "p(95)": 2.892085849999992,
+      "p(99)": 6.976353710000001,
+      "max": 13.250874,
+      "count": 590,
+      "avg": 0.4396783661016949,
+      "min": 0.021891
+    },
+    "vus_max": {
+      "value": 11,
+      "min": 11,
+      "max": 11
+    },
+    "invalid_rejected": {
+      "count": 2,
+      "rate": 0.03537309127834788
+    },
+    "http_req_tls_handshaking": {
+      "avg": 0,
+      "min": 0,
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 590
+    },
+    "http_req_failed": {
+      "passes": 19,
+      "fails": 571,
+      "value": 0.03220338983050847
+    },
+    "data_sent": {
+      "count": 748063635,
+      "rate": 13230661.621433856
+    },
+    "http_req_duration{expected_response:true}": {
+      "avg": 196.28340379334477,
+      "min": 31.455687,
+      "med": 44.169986,
+      "p(95)": 458.82795450000003,
+      "p(99)": 4132.548048899943,
+      "max": 12723.256519,
+      "count": 571
+    },
+    "checks": {
+      "passes": 32,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_blocked": {
+      "med": 0.004814000000000001,
+      "p(95)": 0.014459049999999958,
+      "p(99)": 2.569388610000001,
+      "max": 5.667077,
+      "count": 590,
+      "avg": 0.06369764576271186,
+      "min": 0.002505
+    },
+    "vus": {
+      "value": 1,
+      "min": 1,
+      "max": 11
+    },
+    "data_received": {
+      "count": 343078,
+      "rate": 6067.864704796517
+    },
+    "http_req_waiting": {
+      "p(99)": 4815.026052690009,
+      "max": 6957.550321,
+      "count": 590,
+      "avg": 177.65047398305109,
+      "min": 31.199838,
+      "med": 43.974152000000004,
+      "p(95)": 503.67054069999926
+    },
+    "iterations": {
+      "count": 32,
+      "rate": 0.5659694604535661
+    },
+    "iteration_duration": {
+      "avg": 13189.464369124998,
+      "min": 1034.905564,
+      "med": 1832.2490579999999,
+      "p(95)": 36249.04241715,
+      "p(99)": 37304.79926596,
+      "max": 37509.449047,
+      "count": 32
+    },
+    "job_latency": {
+      "count": 13,
+      "avg": 29727.53846153846,
+      "min": 15444,
+      "med": 32028,
+      "p(95)": 37113,
+      "p(99)": 37429.8,
+      "max": 37509,
+      "thresholds": {
+        "p(95)<10000": true
+      }
+    },
+    "http_req_duration": {
+      "count": 590,
+      "avg": 221.37229281864384,
+      "min": 31.455687,
+      "med": 44.30368,
+      "p(95)": 503.76319289999924,
+      "p(99)": 5475.419573030025,
+      "max": 12723.256519
+    },
+    "http_req_connecting": {
+      "max": 5.607645,
+      "count": 590,
+      "avg": 0.05683477288135593,
+      "min": 0,
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 2.515694960000001
+    },
+    "http_req_sending": {
+      "p(99)": 1266.1230235200042,
+      "max": 6272.009167,
+      "count": 590,
+      "avg": 43.28214046949154,
+      "min": 0.007585,
+      "med": 0.020934,
+      "p(95)": 0.04117604999999996
+    },
+    "job_errors": {
+      "passes": 0,
+      "fails": 13,
+      "thresholds": {
+        "rate<0.05": false
+      },
+      "value": 0
+    },
+    "http_reqs": {
+      "count": 590,
+      "rate": 10.435061927112624
+    }
+  }
+}

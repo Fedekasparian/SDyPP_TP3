@@ -393,7 +393,7 @@ en local.
 | R2 | Requests inválidos devuelven 400 y la cola no cambia | [test_integration.py](../services/backend/tests/test_integration.py) (`test_invalid_inputs_never_enter_queue`, `test_corrupt_and_oversize_files_never_enter_queue`), caso a de R5 en [casos_falla.log](../evidencia/r5/casos_falla.log) |
 | R3 | [contrato.md](contrato.md) | |
 | R4 | Local: 13/13. GKE: **13/13**, con 401, 403, aislamiento (404 en status, events y result), 30/30 lecturas repartidas entre **tres pods backend distintos** detrás del Ingress público, y el job procesado por las VMs workers (ver nota) | [r4_local.txt](../evidencia/r4_local.txt), [r4_gke.txt](../evidencia/gke/r4_gke.txt), [parte B](parte-b.md) |
-| R5 | Matriz completa | sección 8 |
+| R5 | Matriz completa en local y en GKE con workers en VM (108/108), con cuello de botella por celda y SLO de negocio | secciones 8 y 8.7, [results-gke/summary.md](../loadtest/results-gke/summary.md) |
 
 **Nota sobre R4 en GKE.** El script además envía un job y espera que termine. En
 GKE, los workers no son pods: corren en VMs fuera del cluster (Hit #3, pipeline
@@ -818,6 +818,70 @@ bajo sobrecarga degrada la latencia en vez de rechazar trabajo. La contracara,
 que ya se ve en R5 8.4, es que degradar en silencio es cómodo para el cliente y
 peligroso para el operador: sin la alerta de cola de 6.4, un sistema en este
 estado parece sano desde afuera.
+
+### 8.7 R5 en GKE con workers en VM
+
+La matriz completa se corrió contra el Ingress público de GKE el 07/11/2026, con los
+workers en VMs fuera del cluster (V3 = 2 y 6) y meseta de 20 s:
+**108/108 celdas medidas**, tabla en
+[results-gke/summary.md](../loadtest/results-gke/summary.md). Después de cada celda,
+`prom_celda.py` guardó lo que vio Prometheus en esa ventana, y `summarize.py` completó
+la columna `cuello_de_botella` con una regla explícita (la primera etapa saturada del
+pipeline, con el dato que la delata).
+
+p95 end-to-end con VC = 50 (promedio de los tres VB) y celdas que cumplen el SLO de
+negocio (interactivo VA = 1: p95 < 10 s; lote: p95 < 45 s; error < 1 %), de 9 por fila:
+
+| V1 | VA | p95 V3=2 | p95 V3=6 | SLO V3=2 | SLO V3=6 |
+|---|---|---|---|---|---|
+| 10KB | 1 | 2,0 s | 1,5 s | 9/9 | 9/9 |
+| 10KB | 10 | 25,6 s | 7,8 s | 9/9 | 9/9 |
+| 10KB | 50 | 52,3 s | 35,5 s | 5/9 | 9/9 |
+| 1MB | 1 | 6,7 s | 7,3 s | 8/9 | 9/9 |
+| 1MB | 10 | 50,1 s | 47,8 s | 6/9 | 6/9 |
+| 1MB | 50 | 30,4 s* | 36,5 s | 5/9 | 3/9 |
+
+\* Una de las tres celdas no terminó ningún job dentro de la ventana; el promedio es de las otras dos.
+
+En total cumplen el SLO **87 de 108**: 35 de 36 interactivas y 52 de 72 de lote.
+
+**1. Con imágenes chicas, el cuello son los workers, y escalar V3 rinde.** Con 10 KB y
+VA = 10, pasar de 2 a 6 VMs baja el p95 de 25,6 s a 7,8 s (3,3 veces). La columna lo
+explica: `workers (VMs) por I/O`, con la cola `tasks.tp3-worker` arriba de 1.900
+mensajes y la CPU de cada VM en 0,1 núcleo. El worker no está calculando: espera la
+ida y vuelta de cada fragmento a Redis por la red VM-cluster. Por eso agregar VMs
+ayuda aunque ninguna esté ocupada: hay más fragmentos en vuelo a la vez.
+
+**2. Con imágenes de 1 MB, escalar V3 no cambia nada, porque el cuello se mueve al
+cluster.** En 33 celdas la regla marca `nodo GKE ... al 100 % de CPU`: es el único nodo
+del pool `apps` (`e2-standard-2`), donde corren backend, split y joiner. Con 1 MB,
+decodificar y partir cada imagen en el split y recomponerla en el joiner cuesta más
+que el sobel de los workers. Con V3 = 6 los workers esperan trabajo que el nodo `apps`
+no llega a producir. La palanca no es V3 sino más nodos (o más grandes) en `apps`,
+con el HPA del backend y réplicas de split/joiner repartidas.
+
+**3. El caso extremo satura la entrada.** `V1=1MB, VA=50, VC=50` son 50 usuarios
+subiendo 50 MB cada uno: k6 envió 2,5 GB en la ventana (41 MB/s), el 11 % de los requests
+falló (48 de 421) y ningún job terminó con V3 = 2. El límite está en la subida por el
+Ingress, antes de que el trabajo llegue a la cola.
+
+**4. Lo que costó medir: Redis.** Hicieron falta tres corridas. La configuración
+original (`noeviction`, AOF, sin `maxmemory`) no aguantó la carga sostenida: primero
+el kubelet mató a Redis por OOM (los jobs viven 24 h y las imágenes se acumulan) y
+después el AOF llegó a 3,7 GB y llenó el volumen de 8 GiB. Sin disco, Redis rechaza toda
+escritura y el backend responde 503. Quedó con `maxmemory 1200mb`,
+`volatile-ttl` (descarta primero los jobs más viejos) y sin persistencia a disco, que
+para jobs efímeros es aceptable. Con 1.800 MB también murió: `maxmemory` cuenta solo
+los datos, no los buffers de los clientes que leen fragmentos de 1 MB. Las celdas
+medidas antes de cada caída se conservaron; las que corrieron con Redis caído se
+descartaron y se volvieron a medir. Con el tope, en las celdas de 1 MB algunas tareas
+terminaron estacionadas porque Redis descartó un fragmento antes de procesarlo: es
+el límite de memoria del sistema y aparece como tasa de error en esas celdas.
+
+**Advertencias de método.** La cola que deja una celda pesada la hereda la siguiente:
+`run_matrix.sh` no la vacía entre celdas, así que las celdas que siguen a una de
+VA = 50 pueden salir más lentas que si corrieran solas. La meseta de 20 s es la misma
+que en la corrida local (8.1).
 
 ## 9. Marco conceptual
 
