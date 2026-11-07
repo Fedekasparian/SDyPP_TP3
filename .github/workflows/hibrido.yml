@@ -1,0 +1,59 @@
+# Hit #2 (hibrido, cloud-bursting): VMs workers en GCP que consumen de la RabbitMQ
+# y escriben en la Redis de un equipo LOCAL (docker compose), por Tailscale.
+# Estado de Terraform separado (prefix workers-hibrido): no toca las VMs del Hit #3.
+# Requiere en Secret Manager: tp3-tailscale-authkey, tp3-hibrido-rabbit-pass y
+# tp3-hibrido-redis-pass (ver TP3/hit2/README.md, "Corrida hibrida").
+name: hibrido
+on:
+  workflow_dispatch:
+    inputs:
+      worker_count:
+        description: "VMs workers en la nube (0 = teardown)"
+        default: "1"
+      local_host:
+        description: "IP Tailscale del equipo local con RabbitMQ y Redis"
+        default: "100.104.61.29"
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT }}
+  TF_VAR_region: ${{ vars.GCP_REGION }}
+  TF_VAR_workers_service_account: ${{ vars.WORKERS_SA }}
+  TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:latest
+  TF_VAR_worker_count: ${{ inputs.worker_count }}
+  TF_VAR_rabbit_host: ${{ inputs.local_host }}
+  TF_VAR_redis_host: ${{ inputs.local_host }}
+  TF_VAR_name_prefix: tp3-hibrido
+  TF_VAR_rabbit_pass_secret: tp3-hibrido-rabbit-pass
+  TF_VAR_redis_pass_secret: tp3-hibrido-redis-pass
+  TF_VAR_tailscale_authkey_secret: tp3-tailscale-authkey
+  TF_VAR_create_firewall: "false"
+  TF_VAR_spot: "false"
+
+jobs:
+  hibrido:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    defaults:
+      run: { working-directory: TP3/infra/terraform/workers }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}" -backend-config="prefix=workers-hibrido"
+      - run: terraform apply -input=false -auto-approve
+      - name: Esperar a que el worker arranque (consola serie, sin secretos)
+        if: inputs.worker_count != '0'
+        run: |
+          for _ in $(seq 1 40); do
+            out=$(gcloud compute instances get-serial-port-output tp3-hibrido-0 --zone us-central1-a 2>/dev/null || true)
+            echo "$out" | grep -q "exit status" && break; sleep 15
+          done
+          echo "$out" | grep -E "tailscale (up|ping)|pong from|exit status" | tail -15

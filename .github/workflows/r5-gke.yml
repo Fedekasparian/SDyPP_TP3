@@ -1,0 +1,124 @@
+# Matriz R5 contra GKE, con los workers en VMs fuera del cluster (Hit #3).
+# k6 corre en el runner y le pega al Ingress publico; V3 (cantidad de workers) se
+# escala con Terraform (modulo workers). Despues de cada celda, prom_celda.py
+# guarda lo que vio Prometheus en esa ventana y summarize.py arma la tabla con la
+# columna cuello_de_botella. Salida: artifact `r5-gke` -> TP3/loadtest/results-gke/.
+# Al terminar deja 2 VMs workers prendidas (el cluster queda listo para revisar).
+name: r5-gke
+on:
+  workflow_dispatch:
+    inputs:
+      v3_list:
+        description: "Valores de V3 (VMs workers)"
+        default: "2 6"
+      smoke_only:
+        description: "Solo el humo (8 celdas, ~5 min)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency: { group: gke-workers, cancel-in-progress: false }
+
+env:
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT }}
+  TF_VAR_region: ${{ vars.GCP_REGION }}
+  TF_VAR_workers_service_account: ${{ vars.WORKERS_SA }}
+  TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:latest
+  TF_VAR_worker_count: "2"
+
+jobs:
+  r5:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_CI_SA }}
+      - uses: google-github-actions/get-gke-credentials@v2
+        with: { cluster_name: tp3, location: "${{ vars.GKE_ZONE }}" }
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_wrapper: false }
+
+      - name: Stack arriba
+        env: { GKE_ZONE: "${{ vars.GKE_ZONE }}" }
+        run: bash TP3/scripts/gke_up.sh
+
+      - name: Terraform workers (IPs de los ILB internos)
+        working-directory: TP3/infra/terraform/workers
+        run: |
+          echo "TF_VAR_rabbit_host=$(kubectl -n tp3 get svc rabbitmq-internal -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" >> "$GITHUB_ENV"
+          echo "TF_VAR_redis_host=$(kubectl -n tp3 get svc redis-internal -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" >> "$GITHUB_ENV"
+          terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - name: Token admin (generado dentro del backend, enmascarado) y URL
+        run: |
+          t=$(kubectl -n tp3 exec deploy/backend -- python -c "$(cat TP3/scripts/gen_token.py)" admin admin | tr -d '\r\n')
+          echo "::add-mask::$t"; echo "ADMIN_TOKEN=$t" >> "$GITHUB_ENV"
+          echo "BASE_URL=http://$INGRESS_IP/api" >> "$GITHUB_ENV"
+
+      - name: Prometheus por port-forward (se reabre si se cae)
+        run: |
+          nohup bash -c 'while true; do kubectl -n monitoring port-forward svc/kube-prometheus-stack-prometheus 9090:9090; sleep 2; done' >/tmp/pf.log 2>&1 &
+          for _ in $(seq 1 20); do curl -sf localhost:9090/-/ready && break; sleep 3; done
+
+      - name: Imagenes de V1
+        run: |
+          pip install -q numpy pillow
+          python TP3/loadtest/gen_images.py 10KB 1MB
+          ls -l TP3/loadtest/images
+
+      - name: Humo (valida stack, tokens, k6 y la captura de Prometheus)
+        env:
+          SMOKE: "1"
+          MODE: tf
+          RESULTS_DIR: results-gke-smoke
+          DECLARADAS_CSV: ""
+          JOB_TIMEOUT_S: "60"
+          K6_MEMORY: 12g
+          CELL_HOOK: python3 prom_celda.py
+        run: |
+          bash TP3/loadtest/run_matrix.sh
+          ok=$(python3 -c "import json,glob;print(sum(json.load(open(f))['metrics'].get('job_latency',{}).get('count',0) for f in glob.glob('TP3/loadtest/results-gke-smoke/*.json') if not f.endswith('.prom.json')))")
+          echo "jobs ok en el humo: $ok"; [ "$ok" -gt 0 ]
+
+      - name: Matriz R5 (108 celdas, meseta 20 s)
+        if: ${{ !inputs.smoke_only }}
+        env:
+          QUICK: "1"
+          MODE: tf
+          V3_LIST: ${{ inputs.v3_list }}
+          RESULTS_DIR: results-gke
+          DECLARADAS_CSV: ""
+          JOB_TIMEOUT_S: "60"
+          CELL_TIMEOUT: "240"
+          K6_MEMORY: 12g
+          CELL_HOOK: python3 prom_celda.py
+        run: mkdir -p TP3/loadtest/results-gke && bash TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/loadtest/results-gke/corrida.log
+
+      - name: Contexto (VMs y pods al final)
+        if: always()
+        run: |
+          mkdir -p TP3/loadtest/results-gke
+          { date -u +%FT%TZ; gcloud compute instances list --filter='labels.app=tp3-worker' \
+              --format='table(name,zone.basename(),status,machineType.basename(),networkInterfaces[0].networkIP)'
+            kubectl get nodes -L pool -o wide; kubectl -n tp3 get pods -o wide; kubectl -n tp3 get ingress
+          } | tee TP3/loadtest/results-gke/contexto.txt
+
+      - name: Dejar 2 VMs workers prendidas
+        if: always()
+        working-directory: TP3/infra/terraform/workers
+        run: terraform apply -input=false -auto-approve -var worker_count=2
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r5-gke
+          path: |
+            TP3/loadtest/results-gke/
+            TP3/loadtest/results-gke-smoke/

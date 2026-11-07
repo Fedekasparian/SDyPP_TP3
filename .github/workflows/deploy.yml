@@ -50,6 +50,10 @@ jobs:
             --from-literal=REDIS_URL="redis://:${REDIS_ENC}@redis:6379/0" \
             --from-literal=AUTH_SECRET="$AUTH_SECRET" \
             --dry-run=client -o yaml | kubectl apply -f -
+      - name: IP estatica global del Ingress (URL publica fija)
+        run: |
+          gcloud compute addresses describe tp3-ingress --global >/dev/null 2>&1             || gcloud compute addresses create tp3-ingress --global --quiet
+          gcloud compute addresses describe tp3-ingress --global --format='value(address)'
       - name: RabbitMQ y Redis (nodepool infra)
         run: |
           kubectl apply -k TP3/k8s/infra

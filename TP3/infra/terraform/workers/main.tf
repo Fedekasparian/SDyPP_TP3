@@ -8,11 +8,11 @@
 
 resource "google_compute_instance" "worker" {
   count        = var.worker_count
-  name         = "tp3-worker-${count.index}"
+  name         = "${var.name_prefix}-${count.index}"
   machine_type = var.machine_type
   zone         = var.zones[count.index % length(var.zones)]
   tags         = ["tp3-worker"]
-  labels       = { app = "tp3-worker", pool = var.worker_pool }
+  labels       = { app = var.name_prefix, pool = var.worker_pool }
 
   boot_disk {
     initialize_params {
@@ -40,17 +40,26 @@ resource "google_compute_instance" "worker" {
 
   metadata = {
     startup-script = templatefile("${path.module}/startup.sh.tftpl", {
-      region       = var.region
-      worker_image = var.worker_image
-      worker_pool  = var.worker_pool
-      rabbit_host  = var.rabbit_host
-      redis_host   = var.redis_host
+      region           = var.region
+      worker_image     = var.worker_image
+      worker_pool      = var.worker_pool
+      rabbit_host      = var.rabbit_host
+      redis_host       = var.redis_host
+      rabbit_secret    = var.rabbit_pass_secret
+      redis_secret     = var.redis_pass_secret
+      tailscale_secret = var.tailscale_authkey_secret
     })
   }
 }
 
 # Prometheus (dentro del VPC) scrapea /metrics y /health de los workers.
+moved {
+  from = google_compute_firewall.worker_metrics
+  to   = google_compute_firewall.worker_metrics[0]
+}
+
 resource "google_compute_firewall" "worker_metrics" {
+  count         = var.create_firewall ? 1 : 0
   name          = "tp3-worker-metrics"
   network       = "default"
   source_ranges = ["10.0.0.0/8"]

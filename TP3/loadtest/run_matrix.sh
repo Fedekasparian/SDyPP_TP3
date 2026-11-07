@@ -106,7 +106,14 @@ if [[ "$QUICK" == "1" ]]; then
 else
   DURATION="${DURATION:-60s}"; RAMP="${RAMP:-10s}"
 fi
-mkdir -p results
+# RESULTS_DIR separa corridas de entornos distintos (results/ = local, results-gke/ = GKE).
+RESULTS_DIR="${RESULTS_DIR:-results}"
+mkdir -p "$RESULTS_DIR"
+# CELL_HOOK: comando que se ejecuta al terminar cada celda con
+#   <celda> <epoch_inicio> <epoch_fin> <dir_resultados>
+# En GKE es prom_celda.py: guarda lo que vio Prometheus en esa ventana y con eso
+# summarize.py completa la columna cuello_de_botella.
+CELL_HOOK="${CELL_HOOK:-}"
 
 # --- Con que corremos k6 -----------------------------------------------------
 # Si no esta el binario, usamos la imagen oficial. Ojo: adentro del contenedor
@@ -217,6 +224,17 @@ scale_workers() {
     compose) (cd "$REPO_ROOT" && docker compose up -d --no-deps --scale worker="$1" worker) ;;
     k8s) kubectl -n tp3 scale deploy/worker --replicas="$1" && kubectl -n tp3 rollout status deploy/worker ;;
     manual) read -rp "Escalar workers a $1 y presionar Enter..." ;;
+    # tf: VMs workers fuera del cluster (Hit #3). Aplica el modulo de Terraform y
+    # espera a que RabbitMQ vea N consumidores en tasks.tp3-worker.
+    tf)
+      (cd "$REPO_ROOT/TP3/infra/terraform/workers" && terraform apply -input=false -auto-approve -var worker_count="$1")
+      for _ in $(seq 1 60); do
+        c=$(kubectl -n tp3 exec rabbitmq-0 -- rabbitmqctl -q list_queues name consumers 2>/dev/null \
+            | awk '$1=="tasks.tp3-worker"{print $2}' || true)
+        echo "    consumidores en tasks.tp3-worker: ${c:-?}/$1"
+        [[ "${c:-0}" == "$1" ]] && break
+        sleep 10
+      done ;;
     # none: no toca los workers. Lo usa evidencia_hit4_r5.sh, que los apaga
     # a proposito para llenar la cola y NO quiere que el script los reviva.
     none) echo "    (MODE=none: no escalo, dejo los workers como estan)" ;;
@@ -237,13 +255,14 @@ for v3 in $V3_LIST; do
           # Ya medida: se saltea SIN tocar su .meta. Reescribirlo con el
           # DURATION de ESTA corrida diria que se midio con esta meseta, y es
           # mentira: se midio con la de la corrida que la genero.
-          if [[ -f "results/$cell.json" ]]; then
+          if [[ -f "$RESULTS_DIR/$cell.json" ]]; then
             echo "[$i/$ncells] --> $cell (ya medida, la salteo)"
             continue
           fi
           echo "[$i/$ncells] ==> $cell"
           # IMAGE es relativa al .js (k6/), no a loadtest/: de ahi el ../
-          k6_run --quiet --summary-export "results/$cell.json" \
+          t0=$(date +%s)
+          k6_run --quiet --summary-export "$RESULTS_DIR/$cell.json" \
             -e BASE_URL="$K6_BASE_URL" -e ADMIN_TOKEN="$ADMIN_TOKEN" -e IMAGE="../images/$v1.png" \
             -e VA="$va" -e OPS="$vb" -e VC="$vc" -e DURATION="$DURATION" -e RAMP="$RAMP" \
             -e INVALID_RATE="$INVALID_RATE" -e TIMEOUT_S="$JOB_TIMEOUT_S" k6/job.js \
@@ -251,12 +270,16 @@ for v3 in $V3_LIST; do
           # Sidecar con los parametros REALES de la celda. Sin esto, una celda
           # medida con meseta corta es indistinguible de una medida con la
           # meseta normal, y la tabla de R5 diria algo que no es.
-          if [[ -f "results/$cell.json" ]]; then
+          t1=$(date +%s)
+          if [[ -n "$CELL_HOOK" ]]; then
+            $CELL_HOOK "$cell" "$t0" "$t1" "$RESULTS_DIR" || echo "   (hook de celda fallo, sigue)"
+          fi
+          if [[ -f "$RESULTS_DIR/$cell.json" ]]; then
             {
               echo "DURATION=$DURATION"
               echo "RAMP=$RAMP"
               echo "JOB_TIMEOUT_S=$JOB_TIMEOUT_S"
-            } > "results/$cell.meta"
+            } > "$RESULTS_DIR/$cell.meta"
           fi
         done
       done
@@ -265,7 +288,7 @@ for v3 in $V3_LIST; do
 done
 
 if [[ -n "$PY" ]]; then
-  "$PY" summarize.py
+  RESULTS_DIR="$RESULTS_DIR" "$PY" summarize.py
 else
   echo "!! No encontre python/py en el PATH. Corre a mano:  py TP3/loadtest/summarize.py"
 fi

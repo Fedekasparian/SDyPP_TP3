@@ -63,38 +63,10 @@ jobs:
 
       # El pool infra tiene node_count = 1 en Terraform; si alguien lo bajo a 0, se vuelve al estado declarado.
       - name: Levantar el stack (pool infra, RabbitMQ/Redis, apps e Ingress)
+        env: { GKE_ZONE: "${{ vars.GKE_ZONE }}" }
         run: |
-          Z="${{ vars.GKE_ZONE }}"
-          if ! kubectl get nodes -l pool=infra --no-headers 2>/dev/null | grep -q .; then
-            gcloud container clusters resize tp3 --node-pool infra --num-nodes 1 --zone "$Z" --quiet
-          fi
-          for i in $(seq 1 60); do kubectl get nodes -l pool=infra --no-headers 2>/dev/null | grep -q ' Ready' && break; sleep 10; done
-          kubectl get nodes -L pool
-          kubectl -n tp3 rollout status statefulset/rabbitmq --timeout=600s
-          kubectl -n tp3 rollout status statefulset/redis --timeout=300s
-          # ILBs que usan las VMs workers (si se borraron, se recrean del manifiesto, como en deploy.yml)
-          kubectl apply -k TP3/k8s/infra
-          for s in rabbitmq-internal redis-internal; do
-            for i in $(seq 1 40); do
-              [ -n "$(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" ] && break; sleep 10
-            done
-            echo "$s -> $(kubectl -n tp3 get svc $s -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
-          done
-          kubectl -n tp3 rollout restart deploy/backend deploy/split deploy/joiner deploy/dlq-monitor
-          for d in backend split joiner dlq-monitor frontend; do kubectl -n tp3 rollout status deploy/$d --timeout=300s; done
-          if ! kubectl -n tp3 get ingress tp3 >/dev/null 2>&1; then
-            kubectl kustomize TP3/k8s/overlays/gke | yq 'select(.kind == "Ingress")' | kubectl -n tp3 apply -f -
-          fi
-          for i in $(seq 1 60); do
-            IP=$(kubectl -n tp3 get ingress tp3 -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-            [ -n "$IP" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' "http://$IP/api/health")" = 200 ] && break
-            sleep 15
-          done
-          echo "Ingress http://$IP -> $(curl -s "http://$IP/api/health")"
-          kubectl -n monitoring rollout status statefulset/prometheus-kube-prometheus-stack-prometheus --timeout=600s
-          kubectl -n monitoring rollout status deploy/kube-prometheus-stack-grafana --timeout=600s
-          { echo "## Despues de levantar"; kubectl get nodes -L pool -o wide; kubectl -n tp3 get pods -o wide; kubectl -n tp3 get ingress; } \
-            | tee "$OUT/contexto_gke_arriba.txt"
+          bash TP3/scripts/gke_up.sh
+          { echo "## Despues de levantar"; kubectl get nodes -L pool -o wide; kubectl -n tp3 get pods -o wide; kubectl -n tp3 get ingress; }             | tee "$OUT/contexto_gke_arriba.txt"
 
       - name: Tokens (generados dentro del backend, enmascarados)
         run: |

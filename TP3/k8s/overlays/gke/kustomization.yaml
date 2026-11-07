@@ -24,7 +24,8 @@ patches:
     patch: |-
       - op: add
         path: /metadata/annotations
-        value: { kubernetes.io/ingress.class: gce }
+        # IP estatica global (la crea gke_up.sh / deploy.yml): la URL publica no cambia
+        value: { kubernetes.io/ingress.class: gce, kubernetes.io/ingress.global-static-ip-name: tp3-ingress }
   # El balanceador corta a los 30 s por defecto; el stream SSE dura ~55 s (BackendConfig)
   - target: { kind: Service, name: frontend }
     patch: |-
