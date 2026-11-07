@@ -1,12 +1,10 @@
 # Evidencia en GKE (R4 con 3 replicas y Hit #4 CPU/memoria por pod y por nodo).
 # Corre contra el cluster ya desplegado, sin cambiar nada salvo escalar backend a 3.
-# La salida queda como artifact `evidencia-gke` y se copia a TP3/evidencia/gke/.
+# Se corre a mano (Actions -> evidencia-gke -> Run workflow). La salida queda como artifact
+# `evidencia-gke` y se copia a TP3/evidencia/gke/.
 name: evidencia-gke
 on:
   workflow_dispatch:
-  push:
-    branches: [feat/cierre-entrega]
-    paths: [.github/workflows/evidencia-gke.yml]
 
 permissions:
   contents: read

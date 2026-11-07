@@ -390,7 +390,7 @@ en local.
 | Req. | Evidencia | Dónde |
 |---|---|---|
 | R1 | Captura de `ImagePullBackOff` y del pull exitoso | [r1-evidencia.md](r1-evidencia.md) |
-| R2 | Requests inválidos devuelven 400 y la cola no cambia | video, logs |
+| R2 | Requests inválidos devuelven 400 y la cola no cambia | [test_integration.py](../services/backend/tests/test_integration.py) (`test_invalid_inputs_never_enter_queue`, `test_corrupt_and_oversize_files_never_enter_queue`), caso a de R5 en [casos_falla.log](../evidencia/r5/casos_falla.log) |
 | R3 | [contrato.md](contrato.md) | |
 | R4 | Local: 13/13. GKE: **13/13**, con 401, 403, aislamiento (404 en status, events y result), 30/30 lecturas repartidas entre **tres pods backend distintos** detrás del Ingress público, y el job procesado por las VMs workers (ver nota) | [r4_local.txt](../evidencia/r4_local.txt), [r4_gke.txt](../evidencia/gke/r4_gke.txt), [parte B](parte-b.md) |
 | R5 | Matriz completa | sección 8 |

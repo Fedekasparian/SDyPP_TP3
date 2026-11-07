@@ -37,7 +37,7 @@ docker-compose.yml       stack completo local
 | **A** (Federico Kasparian) | Mensajería y cómputo | Hit #0 (ex1 a ex5), Hit #1 (etapas 1 a 3, demo de fallos), worker, operaciones |
 | **B** (Justino Bernal) | Plataforma de aplicación | backend, split, joiner, dlq-monitor, R2, R3 ([contrato](TP3/docs/contrato.md)), R4 (script de evidencia), tests de integración |
 | **C** (Mateo Ponti) | Infraestructura y CI/CD | Terraform (bootstrap, gke, workers), Hit #2 (diagrama híbrido), pipelines, R1 ([evidencia](TP3/docs/r1-evidencia.md)), deploy en GKE |
-| **D** (Agustina Ortiz) | Observabilidad, carga y docs | Hit #4, matriz R5 y tabla del Hit #3, [informe](TP3/docs/informe.md), video |
+| **D** (Agustina Ortiz) | Observabilidad, carga y docs | Hit #4, matriz R5 y tabla del Hit #3, [informe](TP3/docs/informe.md) |
 
 **Reglas:** una rama por frente (`feat/hit0`, `feat/backend`, `feat/infra`, `feat/obs`) y PRs chicos a `main`. El CI (gitleaks y tests) tiene que pasar. Los cambios en `TP3/services/common` (los contratos) se avisan a los 4.
 
@@ -51,10 +51,8 @@ docker-compose.yml       stack completo local
 - Hit #4 en local (capturas de Grafana y alertas disparadas), matriz R5 (108 celdas) y tabla del Hit #3 (120 celdas): [informe](TP3/docs/informe.md), secciones 6 y 8.
 - Evidencia en GKE ([evidencia/gke](TP3/evidencia/gke/), workflow [evidencia-gke](.github/workflows/evidencia-gke.yml)): R4 con tres réplicas detrás del Ingress público, y CPU y memoria por pod y por nodo desde Prometheus.
 - Prometheus descubre las VMs workers con `gce_sd_configs`, y los logs de los pods se centralizan en Loki con Fluent Bit ([observability/loki](TP3/observability/loki/)).
-- Guion de la demo y el video: [guion-video.md](TP3/docs/guion-video.md).
 
 **Falta:**
-- Video (ver el guion).
 - Validar la conexión VM → RabbitMQ local del esquema híbrido (Hit #2).
 
 ## Seguridad
