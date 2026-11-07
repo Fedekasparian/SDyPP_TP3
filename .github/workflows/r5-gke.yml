@@ -73,6 +73,12 @@ jobs:
           python TP3/loadtest/gen_images.py 10KB 1MB
           ls -l TP3/loadtest/images
 
+      # k6 corre en un contenedor con otro uid: sin esto no puede escribir los JSON
+      - name: Directorios de resultados escribibles por el contenedor de k6
+        run: |
+          mkdir -p TP3/loadtest/results-gke-smoke TP3/loadtest/results-gke
+          chmod 777 TP3/loadtest/results-gke-smoke TP3/loadtest/results-gke
+
       - name: Humo (valida stack, tokens, k6 y la captura de Prometheus)
         env:
           SMOKE: "1"
