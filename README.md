@@ -22,7 +22,7 @@ UI en http://localhost:8081, Swagger en http://localhost:8000/docs y RabbitMQ en
 | Estado (health-check) | http://136.69.20.245/api/health |
 | Grafana | http://136.80.214.178 |
 
-La IP del Ingress es la IP estática global `tp3-ingress`, así que no cambia entre despliegues. Los tokens se generan contra el cluster con [gen_tokens_gke.sh](TP3/scripts/gen_tokens_gke.sh) y se comparten por privado.
+Las dos IPs están reservadas como estáticas (`tp3-ingress`, global, y `tp3-grafana`, regional), así que no cambian aunque se recree el Ingress, el Service de Grafana o el cluster. Los tokens se generan contra el cluster con [gen_tokens_gke.sh](TP3/scripts/gen_tokens_gke.sh) y se comparten por privado.
 
 ## Estructura
 ```

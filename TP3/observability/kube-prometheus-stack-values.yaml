@@ -37,10 +37,13 @@ grafana:
   #   kubectl -n monitoring create secret generic grafana-admin --from-literal=admin-user=admin --from-literal=admin-password=...
   admin:
     existingSecret: grafana-admin
-  # Grafana publica en 34.122.176.85. El Service se paso a LoadBalancer a mano (kubectl patch);
-  # si no se declara aca, Helm (server-side apply) choca con ese campo y el upgrade falla.
+  # Grafana publica en http://136.80.214.178: IP estatica regional reservada como `tp3-grafana`
+  # (gcloud compute addresses create tp3-grafana --addresses 136.80.214.178 --region us-central1),
+  # asi la URL no cambia aunque se recree el Service o el cluster. El tipo LoadBalancer se declara
+  # aca porque si no, Helm (server-side apply) choca con el campo y el upgrade falla.
   service:
     type: LoadBalancer
+    loadBalancerIP: 136.80.214.178
   sidecar:
     dashboards:
       enabled: true
