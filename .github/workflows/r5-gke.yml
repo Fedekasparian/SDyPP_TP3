@@ -33,6 +33,8 @@ env:
   TF_VAR_workers_service_account: ${{ vars.WORKERS_SA }}
   TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:latest
   TF_VAR_worker_count: "2"
+  # Sin esto las VMs arrancan con BLOB_BUCKET vacio: cada fragmento falla y va a la DLQ.
+  TF_VAR_blob_bucket: ${{ vars.GCP_PROJECT }}-tp3-images
   TF_VAR_external_ip: "false"   # salen por Cloud NAT: con IP publica, V3=6 excede la cuota regional
   RES: ${{ inputs.results_dir || 'results-gke-bucket' }}
 

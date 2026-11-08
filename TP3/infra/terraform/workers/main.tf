@@ -42,19 +42,20 @@ resource "google_compute_instance" "worker" {
     scopes = ["cloud-platform"]
   }
 
-  metadata = {
-    startup-script = templatefile("${path.module}/startup.sh.tftpl", {
-      region           = var.region
-      worker_image     = var.worker_image
-      worker_pool      = var.worker_pool
-      rabbit_host      = var.rabbit_host
-      redis_host       = var.redis_host
-      blob_bucket      = var.blob_bucket
-      rabbit_secret    = var.rabbit_pass_secret
-      redis_secret     = var.redis_pass_secret
-      tailscale_secret = var.tailscale_authkey_secret
-    })
-  }
+  # metadata_startup_script (y no metadata.startup-script): si cambia la configuracion
+  # (bucket, hosts, imagen) Terraform recrea la VM. Con metadata la actualizaba sin
+  # reiniciar y el worker seguia corriendo con la configuracion vieja.
+  metadata_startup_script = templatefile("${path.module}/startup.sh.tftpl", {
+    region           = var.region
+    worker_image     = var.worker_image
+    worker_pool      = var.worker_pool
+    rabbit_host      = var.rabbit_host
+    redis_host       = var.redis_host
+    blob_bucket      = var.blob_bucket
+    rabbit_secret    = var.rabbit_pass_secret
+    redis_secret     = var.redis_pass_secret
+    tailscale_secret = var.tailscale_authkey_secret
+  })
 }
 
 # Prometheus (dentro del VPC) scrapea /metrics y /health de los workers.
