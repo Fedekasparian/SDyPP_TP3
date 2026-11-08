@@ -2,7 +2,9 @@
 # k6 corre en el runner y le pega al Ingress publico; V3 (cantidad de workers) se
 # escala con Terraform (modulo workers). Despues de cada celda, prom_celda.py
 # guarda lo que vio Prometheus en esa ventana y summarize.py arma la tabla con la
-# columna cuello_de_botella. Salida: artifact `r5-gke` -> TP3/loadtest/results-gke/.
+# columna cuello_de_botella. Salida: artifact `<results_dir>` -> TP3/loadtest/<results_dir>/.
+# results_dir separa corridas (results-gke = imagenes en Redis, results-gke-bucket =
+# imagenes en GCS) para compararlas sin pisar la anterior.
 # Al terminar deja 2 VMs workers prendidas (el cluster queda listo para revisar).
 name: r5-gke
 on:
@@ -15,6 +17,9 @@ on:
         description: "Solo el humo (8 celdas, ~5 min)"
         type: boolean
         default: false
+      results_dir:
+        description: "Carpeta de resultados en TP3/loadtest (una por corrida)"
+        default: "results-gke-bucket"
 
 permissions:
   contents: read
@@ -29,6 +34,7 @@ env:
   TF_VAR_worker_image: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/tp3/worker:latest
   TF_VAR_worker_count: "2"
   TF_VAR_external_ip: "false"   # salen por Cloud NAT: con IP publica, V3=6 excede la cuota regional
+  RES: ${{ inputs.results_dir || 'results-gke-bucket' }}
 
 jobs:
   r5:
@@ -82,8 +88,8 @@ jobs:
       # k6 corre en un contenedor con otro uid: sin esto no puede escribir los JSON
       - name: Directorios de resultados escribibles por el contenedor de k6
         run: |
-          mkdir -p TP3/loadtest/results-gke-smoke TP3/loadtest/results-gke
-          chmod 777 TP3/loadtest/results-gke-smoke TP3/loadtest/results-gke
+          mkdir -p TP3/loadtest/results-gke-smoke TP3/loadtest/$RES
+          chmod 777 TP3/loadtest/results-gke-smoke TP3/loadtest/$RES
 
       - name: Humo (valida stack, tokens, k6 y la captura de Prometheus)
         env:
@@ -105,7 +111,7 @@ jobs:
           QUICK: "1"
           MODE: tf
           V3_LIST: ${{ inputs.v3_list }}
-          RESULTS_DIR: results-gke
+          RESULTS_DIR: ${{ env.RES }}
           DECLARADAS_CSV: ""
           JOB_TIMEOUT_S: "60"
           CELL_TIMEOUT: "240"
@@ -115,16 +121,16 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          mkdir -p TP3/loadtest/results-gke && bash TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/loadtest/results-gke/corrida.log
+          mkdir -p TP3/loadtest/$RES && bash TP3/loadtest/run_matrix.sh 2>&1 | tee TP3/loadtest/$RES/corrida.log
 
       - name: Contexto (VMs y pods al final)
         if: always()
         run: |
-          mkdir -p TP3/loadtest/results-gke
+          mkdir -p TP3/loadtest/$RES
           { date -u +%FT%TZ; gcloud compute instances list --filter='labels.app=tp3-worker' \
               --format='table(name,zone.basename(),status,machineType.basename(),networkInterfaces[0].networkIP)'
             kubectl get nodes -L pool -o wide; kubectl -n tp3 get pods -o wide; kubectl -n tp3 get ingress
-          } | tee TP3/loadtest/results-gke/contexto.txt
+          } | tee TP3/loadtest/$RES/contexto.txt
 
       - name: Dejar 2 VMs workers prendidas
         if: always()
@@ -134,7 +140,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: r5-gke
+          name: ${{ env.RES }}
           path: |
-            TP3/loadtest/results-gke/
+            TP3/loadtest/${{ env.RES }}/
             TP3/loadtest/results-gke-smoke/

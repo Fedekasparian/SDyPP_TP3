@@ -285,6 +285,8 @@ for v3 in $V3_LIST; do
               echo "DURATION=$DURATION"
               echo "RAMP=$RAMP"
               echo "JOB_TIMEOUT_S=$JOB_TIMEOUT_S"
+              echo "T0=$t0"
+              echo "T1=$t1"
             } > "$RESULTS_DIR/$cell.meta"
           fi
         done
