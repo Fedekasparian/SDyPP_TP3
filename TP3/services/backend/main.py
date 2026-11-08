@@ -15,7 +15,7 @@ from starlette.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse, StreamingResponse
 from prometheus_client import make_asgi_app
 
-from tp3common import auth, config, rabbit, store
+from tp3common import auth, blobs, config, rabbit, store
 from tp3common.retry import retry_with_backoff
 from tp3common.logging_setup import recent_logs, setup_logging
 from tp3common.metrics import HTTP_DURATION
@@ -56,6 +56,13 @@ async def _request_error(_: Request, exc: RequestValidationError):
 async def _redis_error(_: Request, exc: redis.RedisError):
     log.error("Redis no disponible: %s", type(exc).__name__)
     return JSONResponse({"error": "store_unavailable", "detail": "Redis no disponible"}, status_code=503)
+
+
+@app.exception_handler(blobs.BlobUnavailable)
+async def _blob_error(_: Request, exc: blobs.BlobUnavailable):
+    log.error("bucket de imagenes no disponible: %s", exc)
+    return JSONResponse({"error": "blob_unavailable", "detail": "Almacenamiento de imagenes no disponible"},
+                        status_code=503)
 
 
 @app.exception_handler(Exception)
@@ -206,12 +213,14 @@ def _enqueue_job(payload, chain, image, op_params, user):
     validate_files(payload)
     job_id = uuid.uuid4().hex
     submitted = time.time()
+    # Primero los bytes al bucket; a Redis va solo el puntero.
+    uris = [blobs.put(blobs.input_name(job_id, i), data) for i, (_, data) in enumerate(payload)]
 
     def save():
         # Reconstruir el pipeline en cada intento: execute() vacia su buffer.
         pipe = r.pipeline()
-        for i, (_, data) in enumerate(payload):
-            pipe.set(store.input_key(job_id, i), data, ex=store.JOB_TTL_S)
+        for i, uri in enumerate(uris):
+            pipe.set(store.input_key(job_id, i), uri, ex=store.JOB_TTL_S)
         pipe.hset(store.job_key(job_id), mapping={
             "owner": user["sub"], "ops": json.dumps(chain), "params": json.dumps(op_params),
             "worker_image": image, "n_files": len(payload), "retries": 0,
@@ -323,9 +332,13 @@ def get_result(job_id: str, file_idx: int, user: dict = Depends(current_user)):
     job = _load_job(job_id, user)
     if job["status"] != "done":
         raise ApiError(404, "not_ready", f"Job en estado {job['status']}")
-    data = r.get(store.output_key(job_id, file_idx))
-    if data is None:
+    uri = r.get(store.output_key(job_id, file_idx))
+    if uri is None:
         raise ApiError(404, "not_found", "Resultado inexistente")
+    try:
+        data = blobs.get(uri.decode())
+    except blobs.BlobNotFound as exc:
+        raise ApiError(404, "not_found", "Resultado inexistente") from exc
     return Response(data, media_type="image/png")
 
 

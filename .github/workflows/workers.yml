@@ -79,6 +79,7 @@ jobs:
           redis_host="$(wait_for_ip redis-internal)"
           echo "TF_VAR_rabbit_host=$rabbit_host" >> "$GITHUB_ENV"
           echo "TF_VAR_redis_host=$redis_host" >> "$GITHUB_ENV"
+          echo "TF_VAR_blob_bucket=${{ vars.GCP_PROJECT }}-tp3-images" >> "$GITHUB_ENV"
       - uses: hashicorp/setup-terraform@v3
       - run: terraform init -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
       - run: terraform fmt -check

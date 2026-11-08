@@ -15,6 +15,8 @@ spec:
       containers:
         - name: redis
           image: redis:7.4-alpine
+          # Desde que las imagenes van al bucket (Redis guarda solo punteros gs://, ~80 bytes),
+          # la memoria depende de la cantidad de jobs y no del tamaño de los archivos.
           # Tope bien por debajo del limit del pod (2Gi). Sin tope, con noeviction, la matriz R5 (jobs
           # con TTL de 24 h) lleno la memoria y el kubelet mato a Redis por OOM, tirando el backend.
           # Con 1800mb tambien murio: maxmemory cuenta solo los datos, y los buffers de los clientes

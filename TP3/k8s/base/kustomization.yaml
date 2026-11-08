@@ -4,6 +4,7 @@ namespace: tp3
 resources:
   - namespace.yaml
   - configmap.yaml
+  - serviceaccount.yaml
   - backend.yaml
   - consumers.yaml
   - frontend.yaml

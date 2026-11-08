@@ -3,7 +3,7 @@ fragmentos de un job, recompone cada archivo y marca el job como done."""
 import json
 import time
 
-from tp3common import config, imaging, rabbit, store
+from tp3common import blobs, config, imaging, rabbit, store
 from tp3common.logging_setup import setup_logging
 from tp3common.metrics import TASK_DURATION, TASK_ERRORS, TASKS_PROCESSED, start_health_server
 
@@ -21,10 +21,12 @@ def assemble(r, job_id: str, job: dict) -> None:
         cores = []
         for n in range(count):
             m = meta[f"{f}-{n}"]
-            frag = imaging.decode(r.get(store.frag_key(job_id, int(f), n, "out")))
+            uri = r.get(store.frag_key(job_id, int(f), n, "out")).decode()
+            frag = imaging.decode(blobs.get(uri))
             cores.append(imaging.crop_core(frag, m["pad_top"], m["core_h"]))
-        r.set(store.output_key(job_id, int(f)), imaging.encode_png(imaging.join_strips(cores)),
-              ex=store.JOB_TTL_S)
+        out_uri = blobs.put(blobs.output_name(job_id, int(f)),
+                            imaging.encode_png(imaging.join_strips(cores)), "image/png")
+        r.set(store.output_key(job_id, int(f)), out_uri, ex=store.JOB_TTL_S)
 
 
 def handle(r, ch, method, body: bytes) -> None:

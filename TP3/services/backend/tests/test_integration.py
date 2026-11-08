@@ -14,7 +14,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
-from tp3common import auth, config, imaging, ops, rabbit, store
+from tp3common import auth, blobs, config, imaging, ops, rabbit, store
 
 pytestmark = [pytest.mark.integration, pytest.mark.skipif(
     os.getenv("TP3_INTEGRATION") != "1", reason="Requiere Redis y RabbitMQ aislados",
@@ -23,10 +23,11 @@ PNG = imaging.encode_png(np.arange(256, dtype=np.uint8).reshape(16, 16))
 
 
 @pytest.fixture
-def stack(monkeypatch):
+def stack(monkeypatch, tmp_path):
     from backend import main
 
     monkeypatch.setattr(config, "AUTH_SECRET", uuid.uuid4().hex)
+    blobs.reset_store(blobs.LocalStore(str(tmp_path / "bucket")))
     monkeypatch.setattr(config, "REDIS_URL", os.environ["REDIS_URL"])
     monkeypatch.setattr(config, "RABBIT_URL", os.environ["RABBIT_URL"])
     r = store.connect()
@@ -71,6 +72,7 @@ def stack(monkeypatch):
         if keys:
             r.delete(*keys)
         r.close()
+        blobs.reset_store()
 
 
 def submit(stack, **data):
@@ -121,6 +123,28 @@ def test_submit_status_result_and_progress_with_real_services(stack):
     assert '"status": "done"' in stream.text
     for suffix in ("workers", "done", "meta", "events", "events:seen"):
         assert 0 < stack.r.ttl(f"job:{job_id}:{suffix}") <= store.JOB_TTL_S
+
+
+def test_redis_only_holds_pointers_never_image_bytes(stack):
+    job_id = submit(stack).json()["job_id"]
+    finish(stack, job_id)
+    image_keys = [store.input_key(job_id, 0), store.output_key(job_id, 0)] + [
+        store.frag_key(job_id, 0, n, kind) for n in range(config.FRAGMENTS_PER_IMAGE) for kind in ("in", "out")
+    ]
+    for key in image_keys:
+        uri = stack.r.get(key).decode()
+        assert uri.startswith("file://")
+        assert 0 < stack.r.ttl(key) <= store.JOB_TTL_S
+        assert blobs.get(uri)[1:4] == b"PNG"
+    assert max(len(stack.r.get(k)) for k in image_keys) < 512
+
+
+def test_missing_result_blob_is_404_not_500(stack):
+    job_id = submit(stack).json()["job_id"]
+    finish(stack, job_id)
+    stack.r.set(store.output_key(job_id, 0), "file:///no/existe")
+    response = stack.client.get(f"/jobs/{job_id}/result/0", headers=stack.users["alice"])
+    assert response.status_code == 404 and response.json()["error"] == "not_found"
 
 
 def test_roles_ownership_and_stream_are_enforced(stack):

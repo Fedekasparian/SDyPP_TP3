@@ -18,19 +18,21 @@ sobre RabbitMQ. El diagrama completo y las decisiones están en
 [arquitectura.md](arquitectura.md). El recorrido de un job es:
 
 1. El **backend** (FastAPI, sin estado, 3 réplicas) valida el pedido *antes* de
-   encolar (R2), guarda los archivos y el estado en Redis y publica el `job_id`
+   encolar (R2), sube los archivos a un bucket de GCS, guarda el estado y el
+   puntero `gs://...` en Redis y publica el `job_id`
    en `split.requests`. Responde 202 de inmediato.
 2. El **split** (master) parte cada imagen en franjas horizontales con
-   solapamiento, las guarda en Redis y publica un mensaje chico por franja en
-   `tasks.tp3-worker`.
+   solapamiento, las sube al bucket y publica un mensaje chico por franja (con su
+   puntero) en `tasks.tp3-worker`.
 3. Los **workers** compiten por esa cola (`prefetch=1`, ack manual), aplican la
    cadena de operaciones y avisan por el exchange fanout `results`.
 4. El **joiner** recorta el solapamiento, une las franjas y marca el job `done`.
    El **dlq-monitor** escucha el mismo fanout para el progreso en vivo (SSE) y
    reasigna lo que cae en la DLQ.
 
-Por el broker solo viajan referencias: los bytes van por Redis. Así un archivo
-de 100 MB no se convierte en un mensaje de 100 MB en RabbitMQ.
+Por el broker y por Redis solo viajan referencias: los bytes van al bucket. Así un
+archivo de 100 MB no se convierte en un mensaje de 100 MB en RabbitMQ ni en 100 MB
+de memoria en Redis (que terminaba en `OOMKilled`, sección 8.7).
 
 ## 2. Hit #0: patrones de mensajería (A)
 
@@ -878,6 +880,15 @@ descartaron y se volvieron a medir. Con el tope, en las celdas de 1 MB algunas t
 terminaron estacionadas porque Redis descartó un fragmento antes de procesarlo: es
 el límite de memoria del sistema y aparece como tasa de error en esas celdas.
 
+**Corrección posterior: las imágenes salen de Redis.** El problema de fondo no era el
+número de `maxmemory` sino guardar bytes en una base en memoria: con archivos más
+grandes cualquier tope se vuelve a llenar. Ahora las imágenes (originales,
+fragmentos y resultados) van a un bucket de GCS con lifecycle de 1 día y en Redis
+queda solo el puntero `gs://...` (~80 bytes). La memoria de Redis pasa a depender de
+la cantidad de jobs y no del tamaño de los archivos; `maxmemory 1200mb` queda como
+protección y ya no se acerca al límite. Las mediciones de esta sección se tomaron
+con la versión anterior (bytes en Redis).
+
 **Advertencias de método.** La cola que deja una celda pesada la hereda la siguiente:
 `run_matrix.sh` no la vacía entre celdas, así que las celdas que siguen a una de
 VA = 50 pueden salir más lentas que si corrieran solas. La meseta de 20 s es la misma
@@ -1081,8 +1092,6 @@ del entorno, no del sistema, y están señaladas como tales en las secciones 6.3
 - **Liberar los fragmentos intermedios al completarse el job**, o darles un TTL
   propio mucho más corto que el del resultado final. Hoy heredan las 24 horas y
   hacen crecer Redis con el throughput acumulado (sección 8.5).
-- **Mover los blobs a almacenamiento de objetos**, dejando en Redis solo estado y
-  punteros. Ataca directamente el cuello de botella de la conclusión 1.
 - **Autoescalado por métrica.** Las métricas para un HPA sobre profundidad de
   cola ya están publicadas; falta conectarlas. Es lo que convertiría la
   elasticidad manual de la sección 9.1 en elasticidad real.

@@ -11,6 +11,7 @@ spec:
   template:
     metadata: { labels: { app: split, tier: apps } }
     spec:
+      serviceAccountName: tp3-apps
       containers:
         - name: split
           image: tp3/split
@@ -30,6 +31,7 @@ spec:
   template:
     metadata: { labels: { app: joiner, tier: apps } }
     spec:
+      serviceAccountName: tp3-apps
       containers:
         - name: joiner
           image: tp3/joiner
@@ -49,6 +51,7 @@ spec:
   template:
     metadata: { labels: { app: dlq-monitor, tier: apps } }
     spec:
+      serviceAccountName: tp3-apps
       containers:
         - name: dlq-monitor
           image: tp3/dlq-monitor

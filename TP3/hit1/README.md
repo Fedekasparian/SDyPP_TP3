@@ -30,9 +30,9 @@ flowchart LR
   S -->|"N franjas + solapamiento<br/>(Redis + cola tasks.pool)"| Q[(tasks.tp3-worker)]
   Q --> W1[worker 1] & W2[worker 2] & W3[worker N]
   W1 & W2 & W3 -->|"resultado (Redis) + aviso fanout results"| J[joiner]
-  J -->|imagen final en Redis, job=done| B
+  J -->|imagen final al bucket (puntero en Redis), job=done| B
 ```
-1. `split` (master) parte la imagen en `FRAGMENTS_PER_IMAGE` franjas horizontales ([imaging.py](../services/common/tp3common/imaging.py)) y guarda cada una en Redis. Publica una tarea por franja.
+1. `split` (master) parte la imagen en `FRAGMENTS_PER_IMAGE` franjas horizontales ([imaging.py](../services/common/tp3common/imaging.py)) y sube cada una al bucket de imágenes; en Redis queda solo el puntero `gs://...`. Publica una tarea por franja con ese puntero.
 2. Los `worker` compiten por la cola `tasks.tp3-worker` con `prefetch=1` (patrón de [ex1](../queue/ex1/)). Cada uno aplica la cadena de operaciones a su franja.
 3. Cada worker avisa por el fanout `results` ([ex2](../queue/ex2/)). El `joiner` recorta el solapamiento de cada franja y las concatena en orden.
 

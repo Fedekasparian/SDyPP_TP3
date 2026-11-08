@@ -34,11 +34,20 @@ REDIS_PASS=$(gcloud secrets versions access latest --secret=${redis_secret})
 RABBIT_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$RABBIT_PASS")
 REDIS_ENC=$(python3 -c 'import sys,urllib.parse as u;print(u.quote(sys.argv[1],safe=""))' "$REDIS_PASS")
 
+# Imagenes: en el Hit #3 van al bucket de GCS (la VM autentica con su SA); en el hibrido
+# al emulador fake-gcs-server del equipo local, por Tailscale. En Redis solo hay punteros.
+%{ if tailscale_secret != "" ~}
+BLOB_ENV="-e BLOB_BACKEND=gcs -e BLOB_BUCKET=tp3-images -e STORAGE_EMULATOR_HOST=http://${rabbit_host}:4443"
+%{ else ~}
+BLOB_ENV="-e BLOB_BACKEND=gcs -e BLOB_BUCKET=${blob_bucket}"
+%{ endif ~}
+
 # 3) Join: el worker se conecta a RabbitMQ/Redis (con retry + backoff) y empieza a consumir
 docker rm -f tp3-worker || true
 docker run -d --name tp3-worker --restart unless-stopped -p 8080:8080 \
   -e RABBIT_URL="amqp://tp3:$${RABBIT_ENC}@${rabbit_host}:5672/" \
   -e REDIS_URL="redis://:$${REDIS_ENC}@${redis_host}:6379/0" \
+  $BLOB_ENV \
   -e WORKER_POOL=${worker_pool} \
   -e ALLOWED_WORKER_IMAGES=${worker_pool} \
   -e WORKER_ID="$(hostname)" \

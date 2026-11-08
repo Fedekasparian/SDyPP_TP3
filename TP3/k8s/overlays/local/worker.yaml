@@ -9,6 +9,7 @@ spec:
   template:
     metadata: { labels: { app: worker } }
     spec:
+      serviceAccountName: tp3-apps
       containers:
         - name: worker
           image: tp3/worker

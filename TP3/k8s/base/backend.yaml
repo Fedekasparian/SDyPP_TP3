@@ -10,6 +10,7 @@ spec:
     metadata:
       labels: { app: backend, tier: apps }
     spec:
+      serviceAccountName: tp3-apps
       containers:
         - name: backend
           image: tp3/backend

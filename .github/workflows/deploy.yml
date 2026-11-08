@@ -49,6 +49,7 @@ jobs:
             --from-literal=RABBIT_URL="amqp://tp3:${RABBIT_ENC}@rabbitmq:5672/" \
             --from-literal=REDIS_URL="redis://:${REDIS_ENC}@redis:6379/0" \
             --from-literal=AUTH_SECRET="$AUTH_SECRET" \
+            --from-literal=BLOB_BUCKET="${{ vars.GCP_PROJECT }}-tp3-images" \
             --dry-run=client -o yaml | kubectl apply -f -
       - name: IP estatica global del Ingress (URL publica fija)
         run: |

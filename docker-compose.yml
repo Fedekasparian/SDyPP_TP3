@@ -8,8 +8,16 @@ x-app: &app
   depends_on:
     rabbitmq: { condition: service_healthy }
     redis: { condition: service_healthy }
+    gcs: { condition: service_started }
 
 services:
+  # Emulador de Google Cloud Storage: las imagenes van al "bucket" y en Redis queda el
+  # puntero gs://, igual que en GKE. El bucket lo crea el primer servicio que lo usa.
+  gcs:
+    image: fsouza/fake-gcs-server:1.50.2
+    command: ["-scheme", "http", "-port", "4443", "-backend", "memory", "-external-url", "http://gcs:4443"]
+    ports: ["4443:4443"]
+
   rabbitmq:
     image: rabbitmq:3.13-management
     environment:

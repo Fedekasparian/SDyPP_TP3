@@ -1,10 +1,11 @@
 """Split: toma {job_id} de split.requests, parte cada archivo del job en
 FRAGMENTS_PER_IMAGE franjas (con el solapamiento que pide la cadena de ops),
-guarda los fragmentos en Redis y publica una tarea por fragmento."""
+sube los fragmentos al bucket (en Redis queda el puntero) y publica una tarea por
+fragmento con el puntero de entrada."""
 import json
 import time
 
-from tp3common import config, imaging, ops, rabbit, store
+from tp3common import blobs, config, imaging, ops, rabbit, store
 from tp3common.logging_setup import setup_logging
 from tp3common.metrics import TASK_DURATION, TASK_ERRORS, TASKS_PROCESSED, start_health_server
 
@@ -24,12 +25,13 @@ def handle(r, ch, method, body: bytes) -> None:
 
         tasks = []
         for f in range(int(job["n_files"])):
-            img = imaging.decode(r.get(store.input_key(job_id, f)))
+            img = imaging.decode(blobs.get(r.get(store.input_key(job_id, f)).decode()))
             for s in imaging.split_strips(img, config.FRAGMENTS_PER_IMAGE, overlap):
-                r.set(store.frag_key(job_id, f, s.index, "in"), imaging.encode_png(s.data),
-                      ex=store.JOB_TTL_S)
+                uri = blobs.put(blobs.frag_name(job_id, f, s.index, "in"), imaging.encode_png(s.data),
+                                "image/png")
+                r.set(store.frag_key(job_id, f, s.index, "in"), uri, ex=store.JOB_TTL_S)
                 tasks.append({
-                    "job_id": job_id, "file_idx": f, "frag_idx": s.index,
+                    "job_id": job_id, "file_idx": f, "frag_idx": s.index, "in_uri": uri,
                     "fragment_id": f"{f}-{s.index}", "ops": chain, "params": params,
                     "worker_image": job["worker_image"], "pad_top": s.pad_top,
                     "core_h": s.core_h, "attempt": 0,

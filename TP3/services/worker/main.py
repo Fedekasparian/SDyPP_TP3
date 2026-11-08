@@ -13,7 +13,7 @@ import threading
 import time
 import uuid
 
-from tp3common import config, imaging, ops, rabbit, store
+from tp3common import blobs, config, imaging, ops, rabbit, store
 from tp3common.logging_setup import setup_logging
 from tp3common.metrics import TASK_DURATION, TASK_ERRORS, TASKS_PROCESSED, start_health_server
 
@@ -45,11 +45,17 @@ def handle(r, ch, method, body: bytes) -> None:
         if r.hget(store.job_key(job_id), "status") == b"queued":
             store.set_status(r, job_id, "processing")
 
-        data = r.get(store.frag_key(job_id, f, n, "in"))
-        if data is None:
-            raise RuntimeError("fragmento no encontrado en Redis")
+        # El mensaje trae el puntero; los bytes se bajan del bucket, no de Redis.
+        uri = task.get("in_uri") or (r.get(store.frag_key(job_id, f, n, "in")) or b"").decode()
+        if not uri:
+            raise RuntimeError("fragmento sin puntero en Redis")
+        try:
+            data = blobs.get(uri)
+        except blobs.BlobNotFound as exc:
+            raise RuntimeError("fragmento no encontrado en el bucket") from exc
         out = ops.apply_chain(imaging.decode(data), task["ops"], task.get("params"))
-        r.set(store.frag_key(job_id, f, n, "out"), imaging.encode_png(out), ex=store.JOB_TTL_S)
+        out_uri = blobs.put(blobs.frag_name(job_id, f, n, "out"), imaging.encode_png(out), "image/png")
+        r.set(store.frag_key(job_id, f, n, "out"), out_uri, ex=store.JOB_TTL_S)
 
         result = {
             k: task[k]

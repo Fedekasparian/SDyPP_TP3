@@ -7,16 +7,19 @@ Claves:
                                         t_split_end, t_proc_start, t_proc_end, t_join_end, error
     job:{id}:done                 set   fragment_ids terminados (idempotente ante duplicados)
     job:{id}:workers              set   worker_ids que participaron
-    job:{id}:in:{file}            bytes archivo original
-    job:{id}:frag:{file}:{n}:in   bytes fragmento de entrada (PNG)
-    job:{id}:frag:{file}:{n}:out  bytes fragmento procesado (PNG)
-    job:{id}:out:{file}           bytes resultado final (PNG)
+    job:{id}:in:{file}            str   puntero (gs://...) al archivo original
+    job:{id}:frag:{file}:{n}:in   str   puntero al fragmento de entrada (PNG)
+    job:{id}:frag:{file}:{n}:out  str   puntero al fragmento procesado (PNG)
+    job:{id}:out:{file}           str   puntero al resultado final (PNG)
     jobs:all                      set   todos los job_ids
     jobs:user:{user}              set   job_ids de un usuario
     jobs:status:{status}          set   job_ids por estado (para /stats)
     stats:latencies               list  duraciones end-to-end en segundos (ultimas 5000)
     worker:alive:{worker_id}      str   heartbeat con TTL
     ratelimit:{user}:{minuto}     int   contador de requests
+
+Los bytes de las imagenes NUNCA entran a Redis: viven en el bucket (blobs.py) y aca
+queda solo el puntero. Asi la memoria de Redis no depende del tamaño de los archivos.
 """
 import json
 import time

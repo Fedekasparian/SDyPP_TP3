@@ -19,6 +19,15 @@ images:
   - { name: tp3/dlq-monitor, newTag: dev }
   - { name: tp3/frontend, newTag: dev }
 patches:
+  # Sin GCP: las imagenes van al emulador de GCS (fake-gcs-server de infra-local.yaml)
+  - target: { kind: ConfigMap, name: tp3-config }
+    patch: |-
+      - op: add
+        path: /data/BLOB_BUCKET
+        value: tp3-images
+      - op: add
+        path: /data/STORAGE_EMULATOR_HOST
+        value: http://gcs:4443
   - target: { kind: Deployment }
     patch: |-
       - op: add

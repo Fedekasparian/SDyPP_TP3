@@ -49,6 +49,7 @@ resource "google_compute_instance" "worker" {
       worker_pool      = var.worker_pool
       rabbit_host      = var.rabbit_host
       redis_host       = var.redis_host
+      blob_bucket      = var.blob_bucket
       rabbit_secret    = var.rabbit_pass_secret
       redis_secret     = var.redis_pass_secret
       tailscale_secret = var.tailscale_authkey_secret

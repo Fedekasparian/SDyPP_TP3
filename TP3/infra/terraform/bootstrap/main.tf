@@ -7,8 +7,11 @@ locals {
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
     "secretmanager.googleapis.com",
+    "storage.googleapis.com",
   ]
 }
+
+data "google_project" "this" {}
 
 resource "google_project_service" "apis" {
   for_each           = toset(local.apis)
@@ -23,6 +26,35 @@ resource "google_storage_bucket" "tfstate" {
   uniform_bucket_level_access = true
   public_access_prevention    = "enforced"
   versioning { enabled = true }
+}
+
+# ---------- Bucket de imagenes (en Redis queda solo el puntero gs://...) ----------
+# Con las imagenes adentro de Redis la memoria crecia con el tamaño de los archivos y el pod
+# terminaba OOMKilled. El bucket no tiene ese techo; el lifecycle borra los objetos al dia,
+# igual que el TTL de 24 h de las claves del job.
+resource "google_storage_bucket" "images" {
+  name                        = "${var.project_id}-tp3-images"
+  location                    = var.region
+  uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
+  force_destroy               = true
+  lifecycle_rule {
+    condition { age = 1 }
+    action { type = "Delete" }
+  }
+  depends_on = [google_project_service.apis]
+}
+
+# Lectura/escritura de objetos, sin claves: las VMs workers con su SA y los pods del
+# namespace tp3 con la KSA `tp3-apps` (Workload Identity Federation, sin GSA intermedio).
+resource "google_storage_bucket_iam_member" "images" {
+  for_each = {
+    workers = "serviceAccount:${google_service_account.workers.email}"
+    apps    = "principal://iam.googleapis.com/projects/${data.google_project.this.number}/locations/global/workloadIdentityPools/${var.project_id}.svc.id.goog/subject/ns/tp3/sa/tp3-apps"
+  }
+  bucket = google_storage_bucket.images.name
+  role   = "roles/storage.objectUser"
+  member = each.value
 }
 
 # ---------- Registry PRIVADO (R1) ----------

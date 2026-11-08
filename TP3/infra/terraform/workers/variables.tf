@@ -50,6 +50,12 @@ variable "redis_host" {
   description = "IP del LoadBalancer interno de Redis"
 }
 
+variable "blob_bucket" {
+  type        = string
+  description = "Bucket de imagenes (output images_bucket del bootstrap). En Redis solo va el puntero"
+  default     = ""
+}
+
 variable "spot" {
   type    = bool
   default = true

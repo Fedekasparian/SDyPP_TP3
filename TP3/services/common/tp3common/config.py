@@ -10,6 +10,11 @@ RABBIT_URL = os.getenv("RABBIT_URL", "amqp://guest:guest@localhost:5672/")
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 AUTH_SECRET = os.getenv("AUTH_SECRET", "")
 
+# Las imagenes van a un bucket; Redis guarda solo el puntero (ver blobs.py).
+BLOB_BACKEND = os.getenv("BLOB_BACKEND", "local")
+BLOB_BUCKET = os.getenv("BLOB_BUCKET", "")
+BLOB_DIR = os.getenv("BLOB_DIR", "/tmp/tp3-blobs")
+
 # R2: lo que se acepta se configura, no se programa.
 ALLOWED_OPS = _list("ALLOWED_OPS", "sobel,grayscale,blur,threshold")
 ALLOWED_WORKER_IMAGES = _list("ALLOWED_WORKER_IMAGES", "tp3-worker")

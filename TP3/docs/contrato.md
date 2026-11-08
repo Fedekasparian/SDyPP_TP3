@@ -102,6 +102,7 @@ Formato común: `{"error": "<codigo>", "detail": "<mensaje legible>"}`
 | 500 | Error inesperado | `{"error":"internal_error","detail":"Error interno"}` |
 | 503 | RabbitMQ no confirma la publicación | `{"error":"broker_unavailable","detail":"RabbitMQ no disponible; no se confirmo el envio"}` |
 | 503 | Redis no disponible | `{"error":"store_unavailable","detail":"Redis no disponible"}` |
+| 503 | El bucket de imágenes no responde tras los reintentos | `{"error":"blob_unavailable","detail":"Almacenamiento de imagenes no disponible"}` |
 
 Los textos incluyen los valores efectivos de configuración. Otros códigos 400: `missing_ops`, `too_many_ops`, `worker_image_not_allowed`, `invalid_image`, `unsupported_format`, `invalid_params`, `too_many_files`, `missing_files`, `invalid_request`, `invalid_role`. Un resultado todavía no listo devuelve `404 not_ready`. Un mensaje estacionado malformado devuelve `500 invalid_dlq_message` y permanece sin ack para revisión.
 
@@ -109,7 +110,7 @@ Los textos incluyen los valores efectivos de configuración. Otros códigos 400:
 
 **Entrega:** publisher confirms y ack manual evitan confirmar un reproceso antes de publicar. Una desconexión después de aceptar un mensaje puede causar reentrega: la garantía es al menos una vez, no exactamente una vez. Las operaciones repartidas entre Redis y RabbitMQ no forman una transacción única. El joiner deduplica fragmentos y el monitor deduplica eventos.
 
-**Expiración:** el job dura 24 h. Sets auxiliares de workers, fragmentos completados, metadatos y eventos tienen vencimiento asociado al job. Índices globales/por usuario/por estado tienen TTL y las consultas eliminan referencias a jobs expirados. Los bytes de entrada/salida conservan su TTL de 24 h desde cada escritura.
+**Expiración:** el job dura 24 h. Sets auxiliares de workers, fragmentos completados, metadatos y eventos tienen vencimiento asociado al job. Índices globales/por usuario/por estado tienen TTL y las consultas eliminan referencias a jobs expirados. Los bytes de entrada/salida viven en el bucket de imágenes (Redis guarda solo el puntero `gs://...`, con TTL de 24 h desde cada escritura) y una regla de lifecycle los borra al día.
 
 ## 4. Lo que falta (datos que no devolvemos, pero podríamos)
 | Dato | Por qué queda afuera |

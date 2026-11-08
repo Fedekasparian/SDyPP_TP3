@@ -17,6 +17,10 @@ output "workers_service_account" {
   value = google_service_account.workers.email
 }
 
+output "images_bucket" {
+  value = google_storage_bucket.images.name
+}
+
 output "tfstate_bucket" {
   value = google_storage_bucket.tfstate.name
 }

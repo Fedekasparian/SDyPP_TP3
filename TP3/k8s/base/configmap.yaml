@@ -16,3 +16,6 @@ data:
   MAX_RETRIES: "3"
   WORKER_POOL: tp3-worker
   FAIL_RATE: "0"
+  # Imagenes al bucket, en Redis solo el puntero. BLOB_BUCKET lo agrega el pipeline al
+  # Secret tp3-secrets (depende del proyecto); el overlay local usa el emulador.
+  BLOB_BACKEND: gcs
