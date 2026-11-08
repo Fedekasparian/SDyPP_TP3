@@ -1,0 +1,174 @@
+{
+  "root_group": {
+    "name": "",
+    "path": "",
+    "id": "d41d8cd98f00b204e9800998ecf8427e",
+    "groups": {},
+    "checks": {
+      "bot sin token -> 401": {
+        "name": "bot sin token -> 401",
+        "path": "::bot sin token -> 401",
+        "id": "fb57ab30c58cbf184d0446ce48a1b843",
+        "passes": 20,
+        "fails": 0
+      },
+      "POST /jobs -> 202": {
+        "fails": 0,
+        "name": "POST /jobs -> 202",
+        "path": "::POST /jobs -> 202",
+        "id": "b64dcd1fe790c23ed11c063d4a64d6b7",
+        "passes": 156
+      },
+      "invalido -> 400 claro": {
+        "name": "invalido -> 400 claro",
+        "path": "::invalido -> 400 claro",
+        "id": "96bed2df279638c1b12eee06f2397a87",
+        "passes": 8,
+        "fails": 0
+      }
+    }
+  },
+  "metrics": {
+    "http_reqs": {
+      "count": 3054,
+      "rate": 74.33330211969098
+    },
+    "http_req_duration{expected_response:true}": {
+      "med": 36.1211285,
+      "p(95)": 100.3402765,
+      "p(99)": 130.33435525,
+      "max": 204.999694,
+      "count": 3026,
+      "avg": 41.31893996497025,
+      "min": 29.457787
+    },
+    "http_req_tls_handshaking": {
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 0,
+      "max": 0,
+      "count": 3054,
+      "avg": 0,
+      "min": 0
+    },
+    "data_sent": {
+      "count": 2365246,
+      "rate": 57569.26833837283
+    },
+    "http_req_sending": {
+      "max": 0.196185,
+      "count": 3054,
+      "avg": 0.015201234774066858,
+      "min": 0.004076,
+      "med": 0.011077,
+      "p(95)": 0.04171499999999999,
+      "p(99)": 0.09474955999999983
+    },
+    "invalid_rejected": {
+      "count": 8,
+      "rate": 0.19471722886625012
+    },
+    "job_latency": {
+      "p(99)": 12717.399999999996,
+      "max": 13018,
+      "count": 156,
+      "avg": 9846.038461538461,
+      "min": 1205,
+      "med": 11493,
+      "p(95)": 12476.75,
+      "thresholds": {
+        "p(95)<10000": true
+      }
+    },
+    "http_req_duration": {
+      "min": 29.457787,
+      "med": 36.1047985,
+      "p(95)": 98.4896583999998,
+      "p(99)": 130.26471168999996,
+      "max": 204.999694,
+      "count": 3054,
+      "avg": 41.27709864210871
+    },
+    "http_req_receiving": {
+      "count": 3054,
+      "avg": 0.23407025081859856,
+      "min": 0.009935,
+      "med": 0.041828000000000004,
+      "p(95)": 1.0124648499999997,
+      "p(99)": 2.013816619999996,
+      "max": 5.092263
+    },
+    "http_req_connecting": {
+      "med": 0,
+      "p(95)": 0,
+      "p(99)": 14.855058029999999,
+      "max": 28.191635,
+      "count": 3054,
+      "avg": 0.28616895808775383,
+      "min": 0
+    },
+    "http_req_waiting": {
+      "count": 3054,
+      "avg": 41.02782715651609,
+      "min": 29.35305,
+      "med": 35.898616000000004,
+      "p(95)": 98.23902164999983,
+      "p(99)": 129.99302966,
+      "max": 204.934035
+    },
+    "http_req_blocked": {
+      "p(99)": 14.915822019999997,
+      "max": 28.252136,
+      "count": 3054,
+      "avg": 0.29091177341191815,
+      "min": 0.000991,
+      "med": 0.0031045,
+      "p(95)": 0.007935999999999997
+    },
+    "vus": {
+      "value": 1,
+      "min": 0,
+      "max": 51
+    },
+    "data_received": {
+      "count": 1552927,
+      "rate": 37797.7052589474
+    },
+    "checks": {
+      "passes": 184,
+      "fails": 0,
+      "value": 1
+    },
+    "http_req_failed": {
+      "passes": 28,
+      "fails": 3026,
+      "value": 0.0091683038637852
+    },
+    "vus_max": {
+      "value": 51,
+      "min": 51,
+      "max": 51
+    },
+    "iterations": {
+      "count": 184,
+      "rate": 4.478496263923753
+    },
+    "job_errors": {
+      "passes": 0,
+      "fails": 156,
+      "thresholds": {
+        "rate<0.05": false
+      },
+      "value": 0
+    },
+    "iteration_duration": {
+      "max": 13017.69937,
+      "count": 184,
+      "avg": 8462.252325413043,
+      "min": 31.406733,
+      "med": 10963.741335499999,
+      "p(95)": 12470.647467550001,
+      "p(99)": 12618.909425759995
+    }
+  }
+}

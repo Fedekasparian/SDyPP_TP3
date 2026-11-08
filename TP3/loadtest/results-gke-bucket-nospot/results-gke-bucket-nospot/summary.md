@@ -1,0 +1,110 @@
+| V1 | V3 | VA | VB | VC | estado | meseta | p50_s | p95_s | p99_s | jobs_ok | throughput_req_s | tasa_error | dlq | timeouts | invalidos_rechazados | slo_ok | cuello_de_botella |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 10KB | 2 | 1 | 1 | 1 | medida | 20s | 1.198 | 1.279 | 2.07 | 20 | 2.79 | 0 | 0 | 0 | 1 | si | ninguno: sin saturacion (colas max 0, CPU VM 0.10); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 1 | 10 | medida | 20s | 2.265 | 3.39 | 4.408 | 110 | 19.06 | 0 | 0 | 0 | 4 | si | ninguno: sin saturacion (colas max 17, CPU VM 0.03); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 1 | 50 | medida | 20s | 11.493 | 12.477 | 12.717 | 156 | 74.33 | 0 | 0 | 0 | 8 | no | workers (VMs) por I/O: cola tasks max 110 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 1 | 2 | 1 | medida | 20s | 1.193 | 1.743 | 1.753 | 20 | 2.66 | 0 | 0 | 0 | 0 | si | ninguno: sin saturacion (colas max 0, CPU VM 0.05); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 2 | 10 | medida | 20s | 2.267 | 2.813 | 2.897 | 113 | 19.95 | 0 | 0 | 0 | 5 | si | ninguno: sin saturacion (colas max 17, CPU VM 0.03); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 2 | 50 | medida | 20s | 11.371 | 12.076 | 12.159 | 158 | 74.01 | 0 | 0 | 0 | 12 | no | workers (VMs) por I/O: cola tasks max 92 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 1 | 3 | 1 | medida | 20s | 1.183 | 1.2 | 1.202 | 22 | 2.8 | 0 | 0 | 0 | 0 | si | ninguno: sin saturacion (colas max 0, CPU VM 0.08); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 3 | 10 | medida | 20s | 2.268 | 2.806 | 2.825 | 113 | 19.72 | 0 | 0 | 0 | 5 | si | ninguno: sin saturacion (colas max 19, CPU VM 0.03); domina el recorrido y el polling |
+| 10KB | 2 | 1 | 3 | 50 | medida | 20s | 11.406 | 12.01 | 12.236 | 157 | 74.37 | 0 | 0 | 0 | 5 | no | workers (VMs) por I/O: cola tasks max 128 con CPU 0.05 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 1 | 1 | medida | 20s | 8.877 | 9.354 | 9.396 | 3 | 2.18 | 0 | 0 | 0 | 0 | si | ninguno: sin saturacion (colas max 0, CPU VM 0.05); domina el recorrido y el polling |
+| 10KB | 2 | 10 | 1 | 10 | medida | 20s | 24.795 | 26.672 | 27.001 | 17 | 13.41 | 0 | 0 | 0 | 0 | si | sin captura de Prometheus (corrida local del 23/10; ver matriz GKE) |
+| 10KB | 2 | 10 | 1 | 50 | medida | 20s | 31.988 | 56.075 | 57.161 | 20 | 80.17 | 0 | 0 | 0 | 4 | no | workers (VMs) por I/O: cola tasks max 336 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 598 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 2 | 10 | medida | 20s | 49.398 | 55.221 | 55.727 | 8 | 16.03 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 549 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 2 | 50 | medida | 20s | 31.972 | 54.692 | 56.99 | 21 | 81.56 | 0 | 0 | 0 | 5 | no | workers (VMs) por I/O: cola tasks max 358 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.0 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 729 con CPU 0.07 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 3 | 10 | medida | 20s | 48.459 | 55.264 | 55.773 | 8 | 15.8 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 632 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 10 | 3 | 50 | medida | 20s | 34.628 | 55.507 | 57.291 | 21 | 82.04 | 0 | 0 | 0 | 6 | no | workers (VMs) por I/O: cola tasks max 306 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 1.95 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 796 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.16 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 1055 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 81.52 | 0 | 0 | 0 | 4 | no | workers (VMs) por I/O: cola tasks max 1362 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 1.96 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 2027 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 17.13 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 2513 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 82.37 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 3054 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 1.95 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 3747 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 17.22 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 4233 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 2 | 50 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 79.79 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 4677 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.06 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 4993 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 18.19 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 5660 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 87.48 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 6180 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.06 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 6638 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 18.16 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 7340 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 87.46 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 7834 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.07 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 8309 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 18.17 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 9000 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 1 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 87.46 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 9452 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 10141 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.83 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 10838 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 73.38 | 0 | 0 | 0 | 4 | no | workers (VMs) por I/O: cola tasks max 11120 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.01 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 11787 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 17.85 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 12257 con CPU 0.07 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 73.98 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 12730 con CPU 0.07 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.01 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 13453 con CPU 0.07 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 17.86 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 14060 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 10 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 76.71 | 0 | 0 | 0 | 3 | no | workers (VMs) por I/O: cola tasks max 14118 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 1.9 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 14353 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 14.49 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 14520 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 6.2 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 14609 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 1.83 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 14651 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 14.59 | 0 | 0 | 0 | 1 | no | workers (VMs) por I/O: cola tasks max 14832 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 6.21 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 14865 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 1.85 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 14893 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 14.01 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 15042 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 1MB | 2 | 50 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 11.24 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 15197 con CPU 0.06 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.05 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 14257 con CPU 0.10 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.77 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 12894 con CPU 0.18 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 87.38 | 0 | 0 | 0 | 4 | no | workers (VMs) por I/O: cola tasks max 11252 con CPU 0.21 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.05 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 10131 con CPU 0.19 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 18.1 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 9024 con CPU 0.17 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 86.89 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 7550 con CPU 0.19 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.05 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 6522 con CPU 0.19 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 18.15 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 5062 con CPU 0.19 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 1 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 86.37 | 0 | 0 | 0 | 2 | no | workers (VMs) por I/O: cola tasks max 3945 con CPU 0.20 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 10 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | workers (VMs) por I/O: cola tasks max 2193 con CPU 0.19 nucleos/VM (fragmentos ida y vuelta a Redis por la red VM-cluster) |
+| 10KB | 6 | 10 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.91 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 274, CPU split 19% del limit |
+| 10KB | 6 | 10 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 85.13 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 318, CPU split 18% del limit |
+| 10KB | 6 | 10 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 314, CPU split 18% del limit |
+| 10KB | 6 | 10 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 17.9 | 0 | 0 | 0 | 2 | no | split: cola split.requests max 317, CPU split 18% del limit |
+| 10KB | 6 | 10 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 85.71 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 362, CPU split 19% del limit |
+| 10KB | 6 | 10 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 359, CPU split 16% del limit |
+| 10KB | 6 | 10 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 17.94 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 363, CPU split 17% del limit |
+| 10KB | 6 | 10 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 85.4 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 408, CPU split 19% del limit |
+| 10KB | 6 | 50 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 1.96 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 403, CPU split 18% del limit |
+| 10KB | 6 | 50 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.1 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 407, CPU split 19% del limit |
+| 10KB | 6 | 50 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 79.31 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 451, CPU split 19% del limit |
+| 10KB | 6 | 50 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 1.93 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 447, CPU split 19% del limit |
+| 10KB | 6 | 50 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 17.15 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 452, CPU split 18% del limit |
+| 10KB | 6 | 50 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 79.21 | 0 | 0 | 0 | 2 | no | split: cola split.requests max 496, CPU split 18% del limit |
+| 10KB | 6 | 50 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 1.95 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 491, CPU split 19% del limit |
+| 10KB | 6 | 50 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 17.22 | 0 | 0 | 0 | 3 | no | split: cola split.requests max 386, CPU split 10% del limit |
+| 10KB | 6 | 50 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 80.18 | 0 | 0 | 0 | 3 | no | split: cola split.requests max 326, CPU split 5% del limit |
+| 1MB | 6 | 1 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.06 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 299, CPU split 5% del limit |
+| 1MB | 6 | 1 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 18.15 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 270, CPU split 4% del limit |
+| 1MB | 6 | 1 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 87.38 | 0 | 0 | 0 | 3 | no | split: cola split.requests max 278, CPU split 4% del limit |
+| 1MB | 6 | 1 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.06 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 252, CPU split 4% del limit |
+| 1MB | 6 | 1 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 18.17 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 247, CPU split 4% del limit |
+| 1MB | 6 | 1 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 87.0 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 290, CPU split 4% del limit |
+| 1MB | 6 | 1 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.07 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 284, CPU split 4% del limit |
+| 1MB | 6 | 1 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 18.13 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 286, CPU split 4% del limit |
+| 1MB | 6 | 1 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 87.47 | 0 | 0 | 0 | 3 | no | split: cola split.requests max 327, CPU split 5% del limit |
+| 1MB | 6 | 10 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 321, CPU split 4% del limit |
+| 1MB | 6 | 10 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 17.87 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 322, CPU split 4% del limit |
+| 1MB | 6 | 10 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 75.9 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 365, CPU split 5% del limit |
+| 1MB | 6 | 10 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 2.01 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 360, CPU split 4% del limit |
+| 1MB | 6 | 10 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 17.84 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 361, CPU split 4% del limit |
+| 1MB | 6 | 10 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 75.56 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 403, CPU split 4% del limit |
+| 1MB | 6 | 10 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 2.03 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 398, CPU split 5% del limit |
+| 1MB | 6 | 10 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 17.87 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 399, CPU split 4% del limit |
+| 1MB | 6 | 10 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 78.7 | 0 | 0 | 0 | 2 | no | split: cola split.requests max 440, CPU split 4% del limit |
+| 1MB | 6 | 50 | 1 | 1 | medida | 20s | nan | nan | nan | 0 | 1.88 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 436, CPU split 4% del limit |
+| 1MB | 6 | 50 | 1 | 10 | medida | 20s | nan | nan | nan | 0 | 15.16 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 437, CPU split 4% del limit |
+| 1MB | 6 | 50 | 1 | 50 | medida | 20s | nan | nan | nan | 0 | 5.41 | 0 | 0 | 0 | 1 | no | split: cola split.requests max 444, CPU split 5% del limit |
+| 1MB | 6 | 50 | 2 | 1 | medida | 20s | nan | nan | nan | 0 | 1.84 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 474, CPU split 5% del limit |
+| 1MB | 6 | 50 | 2 | 10 | medida | 20s | nan | nan | nan | 0 | 14.82 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 477, CPU split 4% del limit |
+| 1MB | 6 | 50 | 2 | 50 | medida | 20s | nan | nan | nan | 0 | 11.96 | 0 | 0 | 0 | 5 | no | split: cola split.requests max 483, CPU split 4% del limit |
+| 1MB | 6 | 50 | 3 | 1 | medida | 20s | nan | nan | nan | 0 | 1.91 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 511, CPU split 4% del limit |
+| 1MB | 6 | 50 | 3 | 10 | medida | 20s | nan | nan | nan | 0 | 14.75 | 0 | 0 | 0 | 0 | no | split: cola split.requests max 512, CPU split 4% del limit |
+| 1MB | 6 | 50 | 3 | 50 | medida | 20s | nan | nan | nan | 0 | 8.74 | 0 | 0 | 0 | 6 | no | split: cola split.requests max 532, CPU split 4% del limit |

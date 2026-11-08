@@ -1,0 +1,39 @@
+{
+ "celda": "r5_V1-10KB_V3-2_VA-50_VB-1_VC-1",
+ "t0": 1794166516,
+ "t1": 1794166576,
+ "ventana_s": 60,
+ "colas": {
+  "split.requests": 25.0,
+  "results.monitor": 0.0,
+  "tasks.dlq": 0.0,
+  "tasks.tp3-worker": 796.0,
+  "results.joiner": 0.0,
+  "tasks.parked": 0.0
+ },
+ "cpu_vm": {
+  "tp3-worker-0": 0.0645,
+  "tp3-worker-1": 0.0606
+ },
+ "cpu_pod_frac": {
+  "rabbitmq-0": 0.089,
+  "redis-0": 0.047,
+  "backend": 0.03,
+  "dlq-monitor": 0.025,
+  "split": 0.041,
+  "frontend": 0.034,
+  "joiner": 0.051
+ },
+ "cpu_nodo": {
+  "10.128.15.219:9100": 0.2305,
+  "10.128.15.218:9100": 0.4637
+ },
+ "http_p95_s": 0.0301,
+ "worker_p95_s": 0.2422,
+ "procesados": {
+  "worker": 910.0,
+  "dlq-monitor": 906.0,
+  "joiner": 930.0,
+  "split": 26.4
+ }
+}
