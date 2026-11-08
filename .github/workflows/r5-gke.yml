@@ -20,6 +20,10 @@ on:
       results_dir:
         description: "Carpeta de resultados en TP3/loadtest (una por corrida)"
         default: "results-gke-bucket"
+      spot:
+        description: "Workers en VMs spot (false = VMs normales, GCP no las apaga a mitad de la corrida)"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -36,6 +40,8 @@ env:
   # Sin esto las VMs arrancan con BLOB_BUCKET vacio: cada fragmento falla y va a la DLQ.
   TF_VAR_blob_bucket: ${{ vars.GCP_PROJECT }}-tp3-images
   TF_VAR_external_ip: "false"   # salen por Cloud NAT: con IP publica, V3=6 excede la cuota regional
+  # Spot es mas barato pero GCP puede apagarlo: el 08/11 se cayo un worker a mitad de V3=2.
+  TF_VAR_spot: ${{ inputs.spot }}
   RES: ${{ inputs.results_dir || 'results-gke-bucket' }}
 
 jobs:
